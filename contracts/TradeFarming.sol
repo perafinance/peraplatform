@@ -133,15 +133,6 @@ contract TradeFarming is Ownable {
         if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
 
-    // Ödülü claimlencek güne dair işlem
-    function claimRewards(uint256 _day) public {
-        require(calcDay() > _day, "The day has not completed!");
-        uint256 rewardRate = (volumeRecords[msg.sender][_day] * 1000) /
-            dailyVolumes[_day]; // ödülün binde ne kadarı onun
-        uint256 userReward = (rewardRate * dailyRewards[_day]) / 1000;
-        require(tokenContract.transferFrom(address(this), msg.sender, userReward));
-    }
-
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
     function claimAllRewards() public {
         uint totalRewardOfUser = 0;

@@ -92,8 +92,8 @@ contract TradeFarming is Ownable {
         Modifier olarak kullanmıştım. İptal
     */
     function tradeRecorder(uint256 _volume) private {
-        volumeRecords[msg.sender][calcDay()] + _volume;
-        dailyVolumes[calcDay()] + _volume;
+        volumeRecords[msg.sender][calcDay()] += _volume;
+        dailyVolumes[calcDay()] += _volume;
 
         if (lastAddedDay + 1 <= calcDay()) {
             addNextDaysToAverage();

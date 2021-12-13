@@ -147,7 +147,19 @@ contract TradeFarming is Ownable {
         }
         require(totalRewardOfUser > 0, "No reward!");
         require(tokenContract.transferFrom(address(this), msg.sender, totalRewardOfUser));
+    }
 
+    function calculateUserRewards() external view returns(uint) {
+        uint totalRewardOfUser = 0;
+        uint rewardRate = 1000;
+        for(uint i = 0; i < tradedDays[msg.sender].length(); i++) {
+            if(tradedDays[msg.sender].at(i) < calcDay()) {
+                rewardRate = (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] * 1000) 
+                    / dailyVolumes[tradedDays[msg.sender].at(i)];
+                    totalRewardOfUser += (rewardRate * dailyRewards[tradedDays[msg.sender].at(i)]) / 1000;
+            }
+        }
+        return totalRewardOfUser;
     }
 
     // AVAX - token çiftine uygun swapa dair fonksiyon. token alınıyorsa true, token satılıyorsa false gönderilir

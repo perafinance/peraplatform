@@ -63,7 +63,7 @@ contract TradeFarming is Ownable {
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
     function depositRewardTokens(uint amount) public onlyOwner {
         require(rewardToken.balanceOf(msg.sender) >= amount, "Not enough balance!");
-        require(rewardToken.approve(address(this), amount), "Not enough allowance!");
+        require(rewardToken.allowance(msg.sender, address(this)) >= amount, "Not enough allowance!");
         require(rewardToken.transferFrom(msg.sender, address(this), amount));
         totalRewardBalance = totalRewardBalance + amount;
     }
@@ -171,7 +171,7 @@ contract TradeFarming is Ownable {
             tradeRecorder(out);
             return out;
         } else {
-            require(tokenContract.approve(address(this), volume), "Not enough allowance!");
+            require(tokenContract.allowance(msg.sender, address(this)) >= volume, "Not enough allowance!");
             require(tokenContract.transferFrom(msg.sender, address(this), volume));
             address[] memory path = new address[](2);
             path[0] = address(tokenContract);

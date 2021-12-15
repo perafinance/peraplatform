@@ -186,30 +186,6 @@ contract TradeFarming is Ownable {
         return totalRewardOfUser;
     }
 
-    /*
-    // ETH - token çiftine uygun swapa dair fonksiyon. token alınıyorsa true, token satılıyorsa false gönderilir
-    function tradeFarm(bool buyToken, uint volume, uint amountOutMin, uint deadline) external payable returns (uint) {
-        if(!tradedDays[msg.sender].contains(calcDay())) tradedDays[msg.sender].add(calcDay());
-        if (buyToken) {
-            require(msg.value == volume , "Not enough balance!");
-            address[] memory path = new address[](2);
-            path[0] = routerContract.WETH();
-            path[1] = address(tokenContract);
-            uint out = routerContract.swapExactETHForTokens{value: volume}(amountOutMin, path, msg.sender, deadline)[1];
-            tradeRecorder(out);
-            return out;
-        } else {
-            require(tokenContract.allowance(msg.sender, address(this)) >= volume, "Not enough allowance!");
-            require(tokenContract.transferFrom(msg.sender, address(this), volume));
-            address[] memory path = new address[](2);
-            path[0] = address(tokenContract);
-            path[1] = routerContract.WETH();
-            tradeRecorder(volume);
-            return routerContract.swapExactTokensForETH(volume, amountOutMin, path, msg.sender, deadline)[1];
-        }
-    }
-    */
-
     function TFswapExactETHForTokens(uint256 amountOutMin, uint256 deadline)
         external
         payable

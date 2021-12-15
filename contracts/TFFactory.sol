@@ -22,7 +22,7 @@ contract TradeFarmingFactory is Ownable {
             _previousDay,
             _totalDays
         );
-
+        TFcontract.transferOwnership(msg.sender);
         return address(TFcontract);
     }
 }

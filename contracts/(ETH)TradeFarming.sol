@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
     DEX'lerdeki swap fonksiyonlarını ve kullandığım lib'leri interface'e ekledim
     Tüm Uniswap v2 forku dexler ile uyumlu çalışacak durumdayız -> yani Avalanche'ta hepsi
 */
-import "./UniV2Router.sol";
+import "./interfaces/IUniswapV2Router.sol";
 /*
     ERC-20 Interface'i
     Swap ve ödül tokenlarında kullanılacak
 */
-import "./IERC20.sol";
+import "./interfaces/IERC20.sol";
 
 // çalışacak olan trade farming kontratı bu kısım. sonrasında bir factory kontratın bu kontratı üreteceği bir yapıya geçeceğiz
 // bu örnek ETH-token çiftleri için token cinsinden hacim takip ederek yarışma düzenliyor

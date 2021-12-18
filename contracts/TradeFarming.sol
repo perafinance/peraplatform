@@ -186,39 +186,45 @@ contract TradeFarming is Ownable {
         return totalRewardOfUser;
     }
 
-    function TFswapExactAVAXForTokens(uint256 amountOutMin, uint256 deadline)
-        external
-        payable
-        returns (uint256[] memory out)
-    {
+    function swapExactAVAXForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory out) {
         if (!tradedDays[msg.sender].contains(calcDay()))
             tradedDays[msg.sender].add(calcDay());
         require(msg.value > 0, "Not enough balance!");
 
+        /*
         address[] memory path = new address[](2);
         path[0] = routerContract.WAVAX();
         path[1] = address(tokenContract);
+        */
 
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
             amountOutMin,
             path,
-            msg.sender,
+            to, // change from msg.sender
             deadline
         );
         tradeRecorder(out[out.length - 1]);
     }
 
-    function TFswapAVAXForExactTokens(uint256 amountOut, uint256 deadline)
-        external
-        payable
-        returns (uint256[] memory)
-    {
+    function swapAVAXForExactTokens(
+        uint256 amountOut,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory) {
         if (!tradedDays[msg.sender].contains(calcDay()))
             tradedDays[msg.sender].add(calcDay());
 
+        /*
         address[] memory path = new address[](2);
         path[0] = routerContract.WAVAX();
         path[1] = address(tokenContract);
+        */
 
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(msg.value >= volume, "Not enough balance!");
@@ -230,14 +236,16 @@ contract TradeFarming is Ownable {
             routerContract.swapAVAXForExactTokens{value: volume}(
                 amountOut,
                 path,
-                msg.sender,
+                to, // change from msg.sender
                 deadline
             );
     }
 
-    function TFswapExactTokensForAVAX(
+    function swapExactTokensForAVAX(
         uint256 amountIn,
         uint256 amountOutMin,
+        address[] calldata path,
+        address to,
         uint256 deadline
     ) external returns (uint256[] memory) {
         if (!tradedDays[msg.sender].contains(calcDay()))
@@ -252,9 +260,11 @@ contract TradeFarming is Ownable {
             "Unsuccesful token transfer!"
         );
 
+        /*
         address[] memory path = new address[](2);
         path[0] = address(tokenContract);
         path[1] = routerContract.WAVAX();
+        */
 
         tradeRecorder(amountIn);
         return
@@ -262,14 +272,16 @@ contract TradeFarming is Ownable {
                 amountIn,
                 amountOutMin,
                 path,
-                msg.sender,
+                to, // change from msg.sender
                 deadline
             );
     }
 
-    function TFswapTokensForExactAVAX(
+    function swapTokensForExactAVAX(
         uint256 amountOut,
         uint256 amountInMax,
+        address[] calldata path,
+        address to,
         uint256 deadline
     ) external returns (uint256[] memory out) {
         if (!tradedDays[msg.sender].contains(calcDay()))
@@ -279,9 +291,12 @@ contract TradeFarming is Ownable {
             "Not enough allowance!"
         );
 
+        /*
         address[] memory path = new address[](2);
         path[0] = address(tokenContract);
         path[1] = routerContract.WAVAX();
+        */
+
         require(
             tokenContract.transferFrom(
                 msg.sender,
@@ -294,7 +309,7 @@ contract TradeFarming is Ownable {
             amountOut,
             amountInMax,
             path,
-            msg.sender,
+            to, // change from msg.sender
             deadline
         );
         tradeRecorder(out[0]);

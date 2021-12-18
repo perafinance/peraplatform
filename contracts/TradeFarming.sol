@@ -205,7 +205,7 @@ contract TradeFarming is Ownable {
             msg.sender,
             deadline
         );
-        tradeRecorder(out[1]);
+        tradeRecorder(out[out.length - 1]);
     }
 
     function TFswapAVAXForExactTokens(uint256 amountOut, uint256 deadline)

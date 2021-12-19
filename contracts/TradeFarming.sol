@@ -145,6 +145,11 @@ contract TradeFarming is Ownable {
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
     function claimAllRewards() public {
+        // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
+        if (lastAddedDay + 1 <= calcDay()) {
+            addNextDaysToAverage();
+        }
+
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = 1000;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
@@ -173,7 +178,7 @@ contract TradeFarming is Ownable {
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = 1000;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
-            if (tradedDays[msg.sender].at(i) < calcDay()) {
+            if (tradedDays[msg.sender].at(i) < lastAddedDay) {
                 rewardRate =
                     (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
                         1000) /

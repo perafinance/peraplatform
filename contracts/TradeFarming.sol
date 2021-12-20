@@ -19,7 +19,6 @@ import "./interfaces/IERC20.sol";
 contract TradeFarming is Ownable {
     using EnumerableSet for EnumerableSet.UintSet; // kullanıcıların trade ettiği günleri tutacağımız set
 
-    address private immutable routerAddress; // dex router adresimiz
     uint256 private immutable deployTime; // yarışma başlama anı timestampi
     IPangolinRouter routerContract; // router instanceımız
     IERC20 tokenContract; // yarışma token contractımız
@@ -47,7 +46,6 @@ contract TradeFarming is Ownable {
         uint256 _previousDay,
         uint256 _totalDays
     ) {
-        routerAddress = _routerAddress;
         deployTime = block.timestamp;
         routerContract = IPangolinRouter(_routerAddress);
         tokenContract = IERC20(_tokenAddress);
@@ -92,7 +90,7 @@ contract TradeFarming is Ownable {
         Kaçıncı günde olduğumuzu hesaplayan fonksiyon
     */
     function calcDay() private view returns (uint256) {
-        return (block.timestamp - deployTime) / 1 days;
+        return (block.timestamp - deployTime) / 5 minutes;
     }
 
     /*

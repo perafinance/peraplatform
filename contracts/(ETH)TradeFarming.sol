@@ -90,7 +90,7 @@ contract TradeFarming is Ownable {
         Hacim kayıtlarını tutmak adına swap işleminden sonra çağıracağız
         Modifier olarak kullanmıştım. İptal
     */
-    function tradeRecorder(uint256 _volume) private {
+    function tradeRecorder(uint256 _volume) private { 
         volumeRecords[msg.sender][calcDay()] += _volume;
         dailyVolumes[calcDay()] += _volume;
 
@@ -118,8 +118,7 @@ contract TradeFarming is Ownable {
         uint256 _pd = previousDay + _cd;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
-            (previousVolumes[lastAddedDay] * _pd + dailyVolumes[lastAddedDay]) /
-            (_pd + 1);
+            (previousVolumes[lastAddedDay] * (_pd - 1) + dailyVolumes[lastAddedDay]) / (_pd);
 
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
@@ -131,7 +130,7 @@ contract TradeFarming is Ownable {
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
         lastAddedDay++;
 
-        //if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
+        if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et

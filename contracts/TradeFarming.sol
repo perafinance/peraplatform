@@ -24,7 +24,7 @@ contract TradeFarming is Ownable {
     IERC20 tokenContract; // yarışma token contractımız
     IERC20 rewardToken; // ödül token contractımız (png)
 
-    mapping(uint256 => uint256) private previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
+    mapping(uint256 => uint256) public previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
     uint256 private previousDay; // yarışma başlamadan önce kaç günlük hacim ortalaması verisi dahil edildi
     uint256 private lastAddedDay = 0; // en son hangi günde önceki günün ortalama hesabı yapıldı
     uint256 private totalRewardBalance = 0; // dağıtılmamış toplam ödül havuzu miktarı
@@ -89,8 +89,8 @@ contract TradeFarming is Ownable {
     /*
         Kaçıncı günde olduğumuzu hesaplayan fonksiyon
     */
-    function calcDay() private view returns (uint256) {
-        return (block.timestamp - deployTime) / 5 minutes;
+    function calcDay() public view returns (uint256) {
+        return (block.timestamp - deployTime) / 1 days;
     }
 
     /*
@@ -138,7 +138,7 @@ contract TradeFarming is Ownable {
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
         lastAddedDay++;
 
-        if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
+        // FIXME: if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et

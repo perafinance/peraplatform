@@ -24,7 +24,7 @@ contract TradeFarming is Ownable {
     IERC20 tokenContract; // yarışma token contractımız
     IERC20 rewardToken; // ödül token contractımız (png)
 
-    mapping(uint256 => uint256) private previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
+    mapping(uint256 => uint256) public previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
     uint256 private previousDay; // yarışma başlamadan önce kaç günlük hacim ortalaması verisi dahil edildi
     uint256 private lastAddedDay = 0; // en son hangi günde önceki günün ortalama hesabı yapıldı
     uint256 private totalRewardBalance = 0; // dağıtılmamış toplam ödül havuzu miktarı
@@ -38,23 +38,16 @@ contract TradeFarming is Ownable {
 
     uint256 constant MAX_UINT = 2**256 - 1;
 
-    constructor(
-        address _routerAddress,
-        address _tokenAddress,
-        address _rewardAddress,
-        uint256 _previousVolume,
-        uint256 _previousDay,
-        uint256 _totalDays
-    ) {
+    constructor() {
         deployTime = block.timestamp;
-        routerContract = IUniswapV2Router01(_routerAddress);
-        tokenContract = IERC20(_tokenAddress);
-        rewardToken = IERC20(_rewardAddress);
-        previousVolumes[0] = _previousVolume;
-        previousDay = _previousDay;
+        routerContract = IUniswapV2Router01(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        tokenContract = IERC20(0xc7AD46e0b8a400Bb3C915120d284AafbA8fc4735);
+        rewardToken = IERC20(0xc7AD46e0b8a400Bb3C915120d284AafbA8fc4735);
+        previousVolumes[0] = 5000000000;
+        previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
-        totalDays = _totalDays;
+        totalDays = 48;
     }
 
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
@@ -89,8 +82,8 @@ contract TradeFarming is Ownable {
     /*
         Kaçıncı günde olduğumuzu hesaplayan fonksiyon
     */
-    function calcDay() private view returns (uint256) {
-        return (block.timestamp - deployTime) / 1 days;
+    function calcDay() public view returns (uint256) {
+        return (block.timestamp - deployTime) / 3 minutes;
     }
 
     /*
@@ -138,11 +131,16 @@ contract TradeFarming is Ownable {
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
         lastAddedDay++;
 
-        if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
+        //if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
     function claimAllRewards() public {
+        // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
+        if (lastAddedDay + 1 <= calcDay()) {
+            addNextDaysToAverage();
+        }
+
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = 1000;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
@@ -167,11 +165,12 @@ contract TradeFarming is Ownable {
         );
     }
 
+    // Sadece hesaplaması güncellenen günler için toplam ödülü döner
     function calculateUserRewards() external view returns (uint256) {
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = 1000;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
-            if (tradedDays[msg.sender].at(i) < calcDay()) {
+            if (tradedDays[msg.sender].at(i) < lastAddedDay) {
                 rewardRate =
                     (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
                         1000) /
@@ -203,7 +202,7 @@ contract TradeFarming is Ownable {
             msg.sender,
             deadline
         );
-        tradeRecorder(out[1]);
+        tradeRecorder(out[out.length - 1]);
     }
 
     function TFswapETHForExactTokens(uint256 amountOut, uint256 deadline)

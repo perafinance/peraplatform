@@ -40,7 +40,9 @@ contract TradeFarming is Ownable {
 
     constructor() {
         deployTime = block.timestamp;
-        routerContract = IPangolinRouter(0x2D99ABD9008Dc933ff5c0CD271B88309593aB921);
+        routerContract = IPangolinRouter(
+            0x2D99ABD9008Dc933ff5c0CD271B88309593aB921
+        );
         tokenContract = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
         rewardToken = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
         previousVolumes[0] = 5000000000;
@@ -66,10 +68,7 @@ contract TradeFarming is Ownable {
 
     // Ödül havuzundan (kontratın kendisi) token çekmeye yarar
     function withdrawRewardTokens(uint256 amount) public onlyOwner {
-        require(
-            totalRewardBalance >= amount,
-            "Not enough balance!"
-        );
+        require(totalRewardBalance >= amount, "Not enough balance!");
         totalRewardBalance -= amount;
         require(rewardToken.transferFrom(address(this), msg.sender, amount));
     }
@@ -90,7 +89,7 @@ contract TradeFarming is Ownable {
         Hacim kayıtlarını tutmak adına swap işleminden sonra çağıracağız
         Modifier olarak kullanmıştım. İptal
     */
-    function tradeRecorder(uint256 _volume) private { 
+    function tradeRecorder(uint256 _volume) private {
         volumeRecords[msg.sender][calcDay()] += _volume;
         dailyVolumes[calcDay()] += _volume;
 
@@ -118,17 +117,24 @@ contract TradeFarming is Ownable {
         uint256 _pd = previousDay + _cd;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
-            (previousVolumes[lastAddedDay] * (_pd - 1) + dailyVolumes[lastAddedDay]) / (_pd);
+            (previousVolumes[lastAddedDay] *
+                (_pd - 1) +
+                dailyVolumes[lastAddedDay]) /
+            (_pd);
 
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
         */
+
+        //FIXME: Bu bölgede SafeMath, sınırları aşmamız sebebiyle hata veriyor sanırım
         dailyRewards[lastAddedDay] =
             ((totalRewardBalance / (totalDays - lastAddedDay)) *
                 calculateDayVolumeChange(lastAddedDay)) /
             1000;
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
-        lastAddedDay++;
+        //FIXME:
+
+        lastAddedDay+=1;
 
         if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
@@ -296,3 +302,7 @@ contract TradeFarming is Ownable {
         tradeRecorder(out[0]);
     }
 }
+
+//TODO: Yarışmayı sonlandıracak bölümü ekle
+// son gününün bitiminde ödülleri hesaplayıp artık işleme izin vermesin
+// bölü 0 ları engelle

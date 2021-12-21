@@ -125,17 +125,22 @@ contract TradeFarming is Ownable {
         uint256 _pd = previousDay + _cd;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
-            (previousVolumes[lastAddedDay] * (_pd - 1) + dailyVolumes[lastAddedDay]) / (_pd);
+            (previousVolumes[lastAddedDay] *
+                (_pd - 1) +
+                dailyVolumes[lastAddedDay]) /
+            _pd;
 
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
         */
+        
+        //FIXME: Bu bölgede SafeMath, sınırları aşmamız sebebiyle hata veriyor sanırım
         dailyRewards[lastAddedDay] =
             ((totalRewardBalance / (totalDays - lastAddedDay)) *
                 calculateDayVolumeChange(lastAddedDay)) /
             1000;
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
-        lastAddedDay++;
+        //FIXME:
 
         if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }

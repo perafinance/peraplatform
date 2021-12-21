@@ -67,8 +67,8 @@ contract TradeFarming is Ownable {
             rewardToken.allowance(msg.sender, address(this)) >= amount,
             "Not enough allowance!"
         );
+        totalRewardBalance += amount;
         require(rewardToken.transferFrom(msg.sender, address(this), amount));
-        totalRewardBalance = totalRewardBalance + amount;
     }
 
     // Ödül havuzundan (kontratın kendisi) token çekmeye yarar
@@ -77,8 +77,8 @@ contract TradeFarming is Ownable {
             rewardToken.balanceOf(address(this)) >= amount,
             "Not enough balance!"
         );
+        totalRewardBalance -= amount;
         require(rewardToken.transferFrom(address(this), msg.sender, amount));
-        totalRewardBalance = totalRewardBalance - amount;
     }
 
     // Yarışmanın toplam süresini değiştirmeye yarar

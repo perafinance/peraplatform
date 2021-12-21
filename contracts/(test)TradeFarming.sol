@@ -67,7 +67,7 @@ contract TradeFarming is Ownable {
     // Ödül havuzundan (kontratın kendisi) token çekmeye yarar
     function withdrawRewardTokens(uint256 amount) public onlyOwner {
         require(
-            rewardToken.balanceOf(address(this)) >= amount,
+            totalRewardBalance >= amount,
             "Not enough balance!"
         );
         totalRewardBalance -= amount;

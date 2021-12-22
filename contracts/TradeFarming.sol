@@ -133,7 +133,7 @@ contract TradeFarming is Ownable {
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
         */
-        
+
         //FIXME: Bu bölgede SafeMath, sınırları aşmamız sebebiyle hata veriyor sanırım
         dailyRewards[lastAddedDay] =
             ((totalRewardBalance / (totalDays - lastAddedDay)) *
@@ -141,6 +141,8 @@ contract TradeFarming is Ownable {
             1000;
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
         //FIXME:
+
+        lastAddedDay += 1;
 
         if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }

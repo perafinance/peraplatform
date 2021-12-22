@@ -134,7 +134,7 @@ contract TradeFarming is Ownable {
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
         //FIXME:
 
-        lastAddedDay+=1;
+        lastAddedDay += 1;
 
         if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }

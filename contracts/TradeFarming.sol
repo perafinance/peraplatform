@@ -134,13 +134,18 @@ contract TradeFarming is Ownable {
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
         */
 
-        //FIXME: Bu bölgede SafeMath, sınırları aşmamız sebebiyle hata veriyor sanırım
+        // Hacim değişimlerini %90 - %110 arasında kısıtlıyoruz
+        uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
+        if (volumeChange > 1100) {
+            volumeChange = 1100;
+        } else if (volumeChange < 900) {
+            volumeChange = 900;
+        }
+
         dailyRewards[lastAddedDay] =
-            ((totalRewardBalance / (totalDays - lastAddedDay)) *
-                calculateDayVolumeChange(lastAddedDay)) /
+            ((totalRewardBalance / (totalDays - lastAddedDay)) * volumeChange) /
             1000;
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
-        //FIXME:
 
         lastAddedDay += 1;
 
@@ -325,3 +330,9 @@ contract TradeFarming is Ownable {
         tradeRecorder(out[0]);
     }
 }
+
+//TODO: Yarışmayı sonlandıracak bölümü ekle
+// son gününün bitiminde ödülleri hesaplayıp artık işleme izin vermesin
+// bölü 0 ları engelle
+
+//TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir

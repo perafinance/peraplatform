@@ -70,7 +70,7 @@ contract TradeFarming is Ownable {
     function withdrawRewardTokens(uint256 amount) public onlyOwner {
         require(totalRewardBalance >= amount, "Not enough balance!");
         totalRewardBalance -= amount;
-        require(rewardToken.transferFrom(address(this), msg.sender, amount));
+        require(rewardToken.transfer(msg.sender, amount));
     }
 
     // Yarışmanın toplam süresini değiştirmeye yarar
@@ -167,8 +167,7 @@ contract TradeFarming is Ownable {
         }
         require(totalRewardOfUser > 0, "No reward!");
         require(
-            tokenContract.transferFrom(
-                address(this),
+            tokenContract.transfer(
                 msg.sender,
                 totalRewardOfUser
             )
@@ -313,3 +312,5 @@ contract TradeFarming is Ownable {
 // bölü 0 ları engelle
 
 //TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir
+//https://xn--2-umb.com/21/muldiv/
+//https://docs.soliditylang.org/en/v0.8.0/control-structures.html#checked-or-unchecked-arithmetic

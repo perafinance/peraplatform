@@ -98,10 +98,12 @@ contract TradeFarming is Ownable {
         Modifier olarak kullanmıştım. İptal
     */
     function tradeRecorder(uint256 _volume) private {
-        volumeRecords[msg.sender][calcDay()] += _volume;
-        dailyVolumes[calcDay()] += _volume;
+        if(calcDay() < totalDays) {
+            volumeRecords[msg.sender][calcDay()] += _volume;
+            dailyVolumes[calcDay()] += _volume;
+        }
 
-        if (lastAddedDay + 1 <= calcDay()) {
+        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
     }
@@ -155,7 +157,7 @@ contract TradeFarming is Ownable {
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
     function claimAllRewards() public {
         // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
-        if (lastAddedDay + 1 <= calcDay()) {
+        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
 
@@ -206,7 +208,7 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory out) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
+        if (!tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays)
             tradedDays[msg.sender].add(calcDay());
         require(msg.value > 0, "Not enough balance!");
 
@@ -231,7 +233,7 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
+        if (!tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays)
             tradedDays[msg.sender].add(calcDay());
 
         /*
@@ -262,7 +264,7 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
+        if (!tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays)
             tradedDays[msg.sender].add(calcDay());
 
         require(
@@ -298,7 +300,7 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory out) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
+        if (!tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays)
             tradedDays[msg.sender].add(calcDay());
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
@@ -330,8 +332,6 @@ contract TradeFarming is Ownable {
     }
 }
 
-//TODO: Yarışmayı sonlandıracak bölümü ekle
-// son gününün bitiminde ödülleri hesaplayıp artık işleme izin vermesin
 // bölü 0 ları engelle
 
 //TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir

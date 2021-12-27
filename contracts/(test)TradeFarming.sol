@@ -90,10 +90,12 @@ contract TradeFarming is Ownable {
         Modifier olarak kullanmıştım. İptal
     */
     function tradeRecorder(uint256 _volume) private {
-        volumeRecords[msg.sender][calcDay()] += _volume;
-        dailyVolumes[calcDay()] += _volume;
+        if(calcDay() < totalDays) {
+            volumeRecords[msg.sender][calcDay()] += _volume;
+            dailyVolumes[calcDay()] += _volume;
+        }
 
-        if (lastAddedDay + 1 <= calcDay()) {
+        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
     }
@@ -147,7 +149,7 @@ contract TradeFarming is Ownable {
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
     function claimAllRewards() public {
         // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
-        if (lastAddedDay + 1 <= calcDay()) {
+        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
 
@@ -211,7 +213,7 @@ contract TradeFarming is Ownable {
             msg.sender,
             deadline
         );
-        tradeRecorder(out[out.length - 1]);
+        if (lastAddedDay != totalDays) tradeRecorder(out[out.length - 1]);
     }
 
     function TFswapAVAXForExactTokens(uint256 amountOut, uint256 deadline)
@@ -229,7 +231,7 @@ contract TradeFarming is Ownable {
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(msg.value >= volume, "Not enough balance!");
 
-        tradeRecorder(amountOut);
+        if (lastAddedDay != totalDays) tradeRecorder(amountOut);
         if (msg.value > volume)
             payable(msg.sender).transfer(msg.value - volume);
         return
@@ -262,7 +264,7 @@ contract TradeFarming is Ownable {
         path[0] = address(tokenContract);
         path[1] = routerContract.WAVAX();
 
-        tradeRecorder(amountIn);
+        if (lastAddedDay != totalDays) tradeRecorder(amountIn);
         return
             routerContract.swapExactTokensForAVAX(
                 amountIn,
@@ -303,12 +305,10 @@ contract TradeFarming is Ownable {
             msg.sender,
             deadline
         );
-        tradeRecorder(out[0]);
+        if (lastAddedDay != totalDays) tradeRecorder(out[0]);
     }
 }
 
-//TODO: Yarışmayı sonlandıracak bölümü ekle
-// son gününün bitiminde ödülleri hesaplayıp artık işleme izin vermesin
 // bölü 0 ları engelle
 
 //TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir

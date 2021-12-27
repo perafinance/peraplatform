@@ -90,7 +90,7 @@ contract TradeFarming is Ownable {
         Modifier olarak kullanmıştım. İptal
     */
     function tradeRecorder(uint256 _volume) private {
-        if(calcDay() < totalDays) {
+        if (calcDay() < totalDays) {
             volumeRecords[msg.sender][calcDay()] += _volume;
             dailyVolumes[calcDay()] += _volume;
         }
@@ -122,7 +122,7 @@ contract TradeFarming is Ownable {
             (previousVolumes[lastAddedDay] *
                 (_pd - 1) +
                 dailyVolumes[lastAddedDay]) /
-            (_pd);
+            _pd;
 
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
@@ -168,12 +168,7 @@ contract TradeFarming is Ownable {
             }
         }
         require(totalRewardOfUser > 0, "No reward!");
-        require(
-            tokenContract.transfer(
-                msg.sender,
-                totalRewardOfUser
-            )
-        );
+        require(tokenContract.transfer(msg.sender, totalRewardOfUser));
     }
 
     // Sadece hesaplaması güncellenen günler için toplam ödülü döner
@@ -199,8 +194,9 @@ contract TradeFarming is Ownable {
         payable
         returns (uint256[] memory out)
     {
-        if (!tradedDays[msg.sender].contains(calcDay()))
-            tradedDays[msg.sender].add(calcDay());
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
         require(msg.value > 0, "Not enough balance!");
 
         address[] memory path = new address[](2);
@@ -221,8 +217,9 @@ contract TradeFarming is Ownable {
         payable
         returns (uint256[] memory)
     {
-        if (!tradedDays[msg.sender].contains(calcDay()))
-            tradedDays[msg.sender].add(calcDay());
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
 
         address[] memory path = new address[](2);
         path[0] = routerContract.WAVAX();
@@ -248,8 +245,9 @@ contract TradeFarming is Ownable {
         uint256 amountOutMin,
         uint256 deadline
     ) external returns (uint256[] memory) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
-            tradedDays[msg.sender].add(calcDay());
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
 
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountIn,
@@ -280,8 +278,9 @@ contract TradeFarming is Ownable {
         uint256 amountInMax,
         uint256 deadline
     ) external returns (uint256[] memory out) {
-        if (!tradedDays[msg.sender].contains(calcDay()))
-            tradedDays[msg.sender].add(calcDay());
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
             "Not enough allowance!"

@@ -1,7 +1,3 @@
-//0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
-//rinkeby router 
-//0xc7ad46e0b8a400bb3c915120d284aafba8fc4735
-//dai
 pragma solidity >=0.6.2;
 
 interface IUniswapV2Router01 {

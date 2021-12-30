@@ -830,7 +830,7 @@ contract TradeFarming is Ownable {
 
         lastAddedDay += 1;
 
-        if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
+        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays) addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et

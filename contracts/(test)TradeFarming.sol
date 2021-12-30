@@ -116,7 +116,7 @@ contract TradeFarming is Ownable {
     */
     function addNextDaysToAverage() private {
         uint256 _cd = calcDay();
-        uint256 _pd = previousDay + _cd;
+        uint256 _pd = previousDay + lastAddedDay + 1;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
             (previousVolumes[lastAddedDay] *

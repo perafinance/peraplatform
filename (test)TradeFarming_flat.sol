@@ -736,7 +736,7 @@ contract TradeFarming is Ownable {
         previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
-        totalDays = 10;
+        totalDays = 3;
     }
 
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
@@ -803,7 +803,7 @@ contract TradeFarming is Ownable {
     */
     function addNextDaysToAverage() private {
         uint256 _cd = calcDay();
-        uint256 _pd = previousDay + _cd;
+        uint256 _pd = previousDay + lastAddedDay + 1;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
             (previousVolumes[lastAddedDay] *
@@ -830,7 +830,7 @@ contract TradeFarming is Ownable {
 
         lastAddedDay += 1;
 
-        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays) addNextDaysToAverage();
+        if (lastAddedDay + 1 <= _cd) addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et

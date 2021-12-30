@@ -732,11 +732,11 @@ contract TradeFarming is Ownable {
         );
         tokenContract = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
         rewardToken = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
-        previousVolumes[0] = 5000000000;
+        previousVolumes[0] = 3000000000000000000000000;
         previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
-        totalDays = 48;
+        totalDays = 10;
     }
 
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
@@ -769,7 +769,7 @@ contract TradeFarming is Ownable {
         Kaçıncı günde olduğumuzu hesaplayan fonksiyon
     */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 5 minutes;
+        return (block.timestamp - deployTime) / 3 minutes;
     }
 
     /*

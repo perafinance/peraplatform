@@ -43,8 +43,8 @@ contract TradeFarming is Ownable {
         routerContract = IPangolinRouter(
             0x2D99ABD9008Dc933ff5c0CD271B88309593aB921
         );
-        tokenContract = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
-        rewardToken = IERC20(0xa9D9053B1531799369700A63bbef48B73dc94629);
+        tokenContract = IERC20(0x2292b53701C119bB7ee2437214dB5E101B7B780c);
+        rewardToken = IERC20(0x2292b53701C119bB7ee2437214dB5E101B7B780c);
         previousVolumes[0] = 5000000000;
         previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);

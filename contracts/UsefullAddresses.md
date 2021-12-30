@@ -11,7 +11,8 @@
 ## For Avalanche Fuji Testnet
 
 ### Fake USDC.e Contract Address
-```0xa9D9053B1531799369700A63bbef48B73dc94629```
+```0x2292b53701C119bB7ee2437214dB5E101B7B780c```
+```https://testnet.snowtrace.io/token/0x2292b53701c119bb7ee2437214db5e101b7b780c```
 
 ### Pangolin Router
 ```0x2D99ABD9008Dc933ff5c0CD271B88309593aB921```

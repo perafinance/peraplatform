@@ -736,7 +736,7 @@ contract TradeFarming is Ownable {
         previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
-        totalDays = 3;
+        totalDays = 2;
     }
 
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar

@@ -337,3 +337,6 @@ contract TradeFarming is Ownable {
 //TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir
 //https://xn--2-umb.com/21/muldiv/
 //https://docs.soliditylang.org/en/v0.8.0/control-structures.html#checked-or-unchecked-arithmetic
+
+//TODO: Make prettier looked
+//https://docs.soliditylang.org/en/v0.8.7/style-guide.html

@@ -27,14 +27,14 @@ contract TradeFarming is Ownable {
     mapping(uint256 => uint256) public previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
     uint256 private previousDay; // yarışma başlamadan önce kaç günlük hacim ortalaması verisi dahil edildi
     uint256 private lastAddedDay = 0; // en son hangi günde önceki günün ortalama hesabı yapıldı
-    uint256 private totalRewardBalance = 0; // dağıtılmamış toplam ödül havuzu miktarı
-    uint256 private totalDays;
+    uint256 public totalRewardBalance = 0; // dağıtılmamış toplam ödül havuzu miktarı
+    uint256 public totalDays;
 
     mapping(address => mapping(uint256 => uint256)) public volumeRecords; // kullanıcıların yarışma günlerine ait hacimleri
     mapping(uint256 => uint256) public dailyVolumes; // günlük toplam hacimler
     mapping(uint256 => uint256) public dailyRewards; // günlük ödüller
 
-    mapping(address => EnumerableSet.UintSet) tradedDays; // kullanıcıların yarıştığı günler
+    mapping(address => EnumerableSet.UintSet) private tradedDays; // kullanıcıların yarıştığı günler
 
     uint256 constant MAX_UINT = 2**256 - 1;
 
@@ -139,10 +139,8 @@ contract TradeFarming is Ownable {
         uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
         if (volumeChange > 1100) {
             volumeChange = 1100;
-        } else if (volumeChange < 900 && volumeChange != 0) {
+        } else if (volumeChange < 900) {
             volumeChange = 900;
-        } else {
-            volumeChange = 0;
         }
 
         dailyRewards[lastAddedDay] =
@@ -199,9 +197,25 @@ contract TradeFarming is Ownable {
         return totalRewardOfUser;
     }
 
+    // Bir kullanıcının belirtilen gündeki ödülünü döner
+    function calculateDailyUserReward(uint _day) external view returns (uint256) {
+        uint256 rewardOfUser = 0;
+        uint256 rewardRate = 1000; // FIXME:  
+        if (_day < lastAddedDay && tradedDays[msg.sender].contains(_day)) {
+                rewardRate =
+                    (volumeRecords[msg.sender][_day] *
+                        1000) /
+                    dailyVolumes[_day];
+                rewardOfUser +=
+                    (rewardRate * dailyRewards[_day]) /
+                    1000;
+        }   
+        return rewardOfUser;
+    }
+
     // Ödülleri hesaplanmamış bir gün olup olmadığını döner
     function isCalculated() external view returns (bool) {
-        return (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays);
+        return !(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays);
     }
 
     function swapExactAVAXForTokens(

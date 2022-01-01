@@ -45,7 +45,7 @@ contract TradeFarming is Ownable {
         );
         tokenContract = IERC20(0x2292b53701C119bB7ee2437214dB5E101B7B780c);
         rewardToken = IERC20(0x2292b53701C119bB7ee2437214dB5E101B7B780c);
-        previousVolumes[0] = 5000000000;
+        previousVolumes[0] = 3000000000000000000000000;
         previousDay = 5;
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
@@ -53,7 +53,7 @@ contract TradeFarming is Ownable {
     }
 
     // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
-    function depositRewardTokens(uint256 amount) public onlyOwner {
+    function depositRewardTokens(uint256 amount) external onlyOwner {
         require(
             rewardToken.balanceOf(msg.sender) >= amount,
             "Not enough balance!"
@@ -67,14 +67,14 @@ contract TradeFarming is Ownable {
     }
 
     // Ödül havuzundan (kontratın kendisi) token çekmeye yarar
-    function withdrawRewardTokens(uint256 amount) public onlyOwner {
+    function withdrawRewardTokens(uint256 amount) external onlyOwner {
         require(totalRewardBalance >= amount, "Not enough balance!");
         totalRewardBalance -= amount;
         require(rewardToken.transfer(msg.sender, amount));
     }
 
     // Yarışmanın toplam süresini değiştirmeye yarar
-    function changeTotalDays(uint256 _newTotalDays) public onlyOwner {
+    function changeTotalDays(uint256 _newTotalDays) external onlyOwner {
         totalDays = _newTotalDays;
     }
 
@@ -126,14 +126,18 @@ contract TradeFarming is Ownable {
 
         /*
             Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
+            %10 ödül değişim sınırı var
+            Swap yoksa ödül yok
         */
 
         // Hacim değişimlerini %90 - %110 arasında kısıtlıyoruz
         uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
         if (volumeChange > 1100) {
             volumeChange = 1100;
-        } else if (volumeChange < 900) {
+        } else if (volumeChange < 900 && volumeChange != 0) {
             volumeChange = 900;
+        } else {
+            volumeChange = 0;
         }
 
         dailyRewards[lastAddedDay] =
@@ -147,14 +151,14 @@ contract TradeFarming is Ownable {
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
-    function claimAllRewards() public {
+    function claimAllRewards() external {
         // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
         if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
 
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = 1000;
+        uint256 rewardRate = 1000; // FIXME: minimum ödül oranını (hassasiyeti) belirtiyor olacak bu. o yüzden çok daha büyütmeliyiz. (muldiv kullan)
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
             if (tradedDays[msg.sender].at(i) < calcDay()) {
                 rewardRate =
@@ -172,9 +176,10 @@ contract TradeFarming is Ownable {
     }
 
     // Sadece hesaplaması güncellenen günler için toplam ödülü döner
+    // FIXME: hesaplanmamış günü de gösterebilecek bir yol düşün 
     function calculateUserRewards() external view returns (uint256) {
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = 1000;
+        uint256 rewardRate = 1000; // FIXME:
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) {
                 rewardRate =
@@ -187,6 +192,11 @@ contract TradeFarming is Ownable {
             }
         }
         return totalRewardOfUser;
+    }
+
+    // Ödülleri hesaplanmamış bir gün olup olmadığını döner
+    function isCalculated() external view returns (bool) {
+        return (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays);
     }
 
     function TFswapExactAVAXForTokens(uint256 amountOutMin, uint256 deadline)

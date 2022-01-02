@@ -83,15 +83,17 @@ describe("Trade Farming Contract", function () {
     describe("Swap", function () {
         let userBalances = [], newBalances = [];
         let bTimestamp;
+        let initialVolume, volume = 0, expectedVolume = 0;
 
         beforeEach(async function () {
             userBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             userBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
             bTimestamp = await getBlockTiemstamp();
             await TFToken.connect(addr1).approve(tradeFarming.address, ethers.constants.MaxUint256);
+            initialVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))); 
         });
 
-        it("Exact ETH for Tokens", async function () {
+        it("Exact ETH for Tokens and record volumes", async function () {
             await tradeFarming.connect(addr1).swapExactETHForTokens(0, pathEnT, addr1.address, bTimestamp * 2, { value: ethers.utils.parseEther("1") });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
@@ -100,37 +102,60 @@ describe("Trade Farming Contract", function () {
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
             expect(newBalances[1]).to.be.greaterThan(userBalances[1]);
+
+            volume = newBalances[1] - userBalances[1];
+            expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
+            expect(volume).to.be.equal(expectedVolume);
         });
 
-        it("Swaps ETH for Exact Tokens", async function () {
+        it("Swaps ETH for Exact Tokens and record volumes", async function () {
             await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp * 2, { value: ethers.utils.parseEther("2") });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
+
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
             expect(newBalances[1]).to.be.equal(userBalances[1] + 300);
+
+            volume = newBalances[1] - userBalances[1];
+            expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
+            expect(volume).to.be.equal(expectedVolume);
         });
 
 
-        it("Exact Token for ETH", async function () {
+        it("Exact Token for ETH and record volumes", async function () {
             await tradeFarming.connect(addr1).swapExactTokensForETH(ethers.utils.parseEther("300"), 0, pathTnE, addr1.address, bTimestamp * 2);
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
+
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+
             expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
             expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
+
+            volume = userBalances[1] - newBalances[1];
+            expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
+            expect(volume).to.be.equal(expectedVolume);
         });
 
-        it("Tokens for Exact ETH", async function () {
+        it("Tokens for Exact ETH and record volumes", async function () {
             await tradeFarming.connect(addr1).swapTokensForExactETH(ethers.utils.parseEther("0.1"), ethers.utils.parseEther("3000"), pathTnE, addr1.address, bTimestamp * 2);
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
+
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+
             expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
             expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
+
+            volume = userBalances[1] - newBalances[1];
+            expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
+            expect(volume).to.be.equal(expectedVolume);
+
         });
 
     });

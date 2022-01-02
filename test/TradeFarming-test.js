@@ -25,7 +25,7 @@ async function getBalances(address, TFToken) {
 async function getBlockTiemstamp() {
     let block_number, block, block_timestamp;
 
-    block_number= await provider.getBlockNumber();;
+    block_number = await provider.getBlockNumber();;
     block = await provider.getBlock(block_number);
     block_timestamp = block.timestamp;
 
@@ -84,17 +84,18 @@ describe("Trade Farming Contract", function () {
         let userBalances = [], newBalances = [];
         let bTimestamp;
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             userBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             userBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
             bTimestamp = await getBlockTiemstamp();
+            await TFToken.connect(addr1).approve(tradeFarming.address, ethers.constants.MaxUint256);
         });
 
         it("Exact ETH for Tokens", async function () {
-            await tradeFarming.connect(addr1).swapExactETHForTokens(0, pathEnT, addr1.address, bTimestamp*2, {value: ethers.utils.parseEther("1")});
+            await tradeFarming.connect(addr1).swapExactETHForTokens(0, pathEnT, addr1.address, bTimestamp * 2, { value: ethers.utils.parseEther("1") });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
-            
+
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
@@ -102,7 +103,7 @@ describe("Trade Farming Contract", function () {
         });
 
         it("Swaps ETH for Exact Tokens", async function () {
-            await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp*2, {value: ethers.utils.parseEther("2")});
+            await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp * 2, { value: ethers.utils.parseEther("2") });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
@@ -111,14 +112,26 @@ describe("Trade Farming Contract", function () {
             expect(newBalances[1]).to.be.equal(userBalances[1] + 300);
         });
 
-        /*
-        it("Exact Token for ETH", async function () {
 
+        it("Exact Token for ETH", async function () {
+            await tradeFarming.connect(addr1).swapExactTokensForETH(ethers.utils.parseEther("300"), 0, pathTnE, addr1.address, bTimestamp * 2);
+            newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
+            newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
+            console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
+            console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+            expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
+            expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
         });
 
         it("Tokens for Exact ETH", async function () {
-
+            await tradeFarming.connect(addr1).swapTokensForExactETH(ethers.utils.parseEther("0.1"), ethers.utils.parseEther("3000"), pathTnE, addr1.address, bTimestamp * 2);
+            newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
+            newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
+            console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
+            console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+            expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
+            expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
         });
-        */
+
     });
 });

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
     DEX'lerdeki swap fonksiyonlarını ve kullandığım lib'leri interface'e ekledim
     Tüm Uniswap v2 forku dexler ile uyumlu çalışacak durumdayız -> yani Avalanche'ta hepsi
 */
-import "./interfaces/IPangolinRouter.sol";
+import "./interfaces/IUniswapV2Router.sol";
 /*
     ERC-20 Interface'i
     Swap ve ödül tokenlarında kullanılacak
@@ -15,12 +15,12 @@ import "./interfaces/IPangolinRouter.sol";
 import "./interfaces/IERC20.sol";
 
 // çalışacak olan trade farming kontratı bu kısım. sonrasında bir factory kontratın bu kontratı üreteceği bir yapıya geçeceğiz
-// bu örnek AVAX-token çiftleri için token cinsinden hacim takip ederek yarışma düzenliyor
+// bu örnek ETH-token çiftleri için token cinsinden hacim takip ederek yarışma düzenliyor
 contract TradeFarming is Ownable {
     using EnumerableSet for EnumerableSet.UintSet; // kullanıcıların trade ettiği günleri tutacağımız set
 
     uint256 private immutable deployTime; // yarışma başlama anı timestampi
-    IPangolinRouter routerContract; // router instanceımız
+    IUniswapV2Router01 routerContract; // router instanceımız
     IERC20 tokenContract; // yarışma token contractımız
     IERC20 rewardToken; // ödül token contractımız (png)
 
@@ -47,7 +47,7 @@ contract TradeFarming is Ownable {
         uint256 _totalDays
     ) {
         deployTime = block.timestamp;
-        routerContract = IPangolinRouter(_routerAddress);
+        routerContract = IUniswapV2Router01(_routerAddress);
         tokenContract = IERC20(_tokenAddress);
         rewardToken = IERC20(_rewardAddress);
         previousVolumes[0] = _previousVolume;
@@ -218,7 +218,7 @@ contract TradeFarming is Ownable {
         return !(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays);
     }
 
-    function swapExactAVAXForTokens(
+    function swapExactETHForTokens(
         uint256 amountOutMin,
         address[] calldata path,
         address to,
@@ -231,11 +231,11 @@ contract TradeFarming is Ownable {
 
         /*
         address[] memory path = new address[](2);
-        path[0] = routerContract.WAVAX();
+        path[0] = routerContract.WETH();
         path[1] = address(tokenContract);
         */
 
-        out = routerContract.swapExactAVAXForTokens{value: msg.value}(
+        out = routerContract.swapExactETHForTokens{value: msg.value}(
             amountOutMin,
             path,
             to, // change from msg.sender
@@ -244,7 +244,7 @@ contract TradeFarming is Ownable {
         if (lastAddedDay != totalDays) tradeRecorder(out[out.length - 1]);
     }
 
-    function swapAVAXForExactTokens(
+    function swapETHForExactTokens(
         uint256 amountOut,
         address[] calldata path,
         address to,
@@ -256,7 +256,7 @@ contract TradeFarming is Ownable {
 
         /*
         address[] memory path = new address[](2);
-        path[0] = routerContract.WAVAX();
+        path[0] = routerContract.WETH();
         path[1] = address(tokenContract);
         */
 
@@ -267,7 +267,7 @@ contract TradeFarming is Ownable {
         if (msg.value > volume)
             payable(msg.sender).transfer(msg.value - volume);
         return
-            routerContract.swapAVAXForExactTokens{value: volume}(
+            routerContract.swapETHForExactTokens{value: volume}(
                 amountOut,
                 path,
                 to, // change from msg.sender
@@ -275,7 +275,7 @@ contract TradeFarming is Ownable {
             );
     }
 
-    function swapExactTokensForAVAX(
+    function swapExactTokensForETH(
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
@@ -298,12 +298,12 @@ contract TradeFarming is Ownable {
         /*
         address[] memory path = new address[](2);
         path[0] = address(tokenContract);
-        path[1] = routerContract.WAVAX();
+        path[1] = routerContract.WETH();
         */
 
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
         return
-            routerContract.swapExactTokensForAVAX(
+            routerContract.swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
                 path,
@@ -312,7 +312,7 @@ contract TradeFarming is Ownable {
             );
     }
 
-    function swapTokensForExactAVAX(
+    function swapTokensForExactETH(
         uint256 amountOut,
         uint256 amountInMax,
         address[] calldata path,
@@ -330,7 +330,7 @@ contract TradeFarming is Ownable {
         /*
         address[] memory path = new address[](2);
         path[0] = address(tokenContract);
-        path[1] = routerContract.WAVAX();
+        path[1] = routerContract.WETH();
         */
 
         require(
@@ -341,7 +341,7 @@ contract TradeFarming is Ownable {
             )
         );
 
-        out = routerContract.swapTokensForExactAVAX(
+        out = routerContract.swapTokensForExactETH(
             amountOut,
             amountInMax,
             path,

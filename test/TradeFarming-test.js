@@ -36,7 +36,8 @@ describe("Trade Farming Contract", function () {
     const ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
     const TF_TOKEN_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F"; // DAI: mainnet
     const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH: mainnet
-    const PREVIOUS_VOLUME = ethers.utils.parseUnits("100000", 18);
+    const TOKEN_COUNT = "100000";
+    const PREVIOUS_VOLUME = ethers.utils.parseUnits(TOKEN_COUNT, 18);
     const PREVIOUS_DAYS = 10;
     const TOTAL_DAYS = 10;
 
@@ -80,6 +81,7 @@ describe("Trade Farming Contract", function () {
         expect(await tradeFarming.totalRewardBalance()).to.be.equal(PREVIOUS_VOLUME);
     });
 
+    /*
     describe("Swap", function () {
         let userBalances = [], newBalances = [];
         let bTimestamp;
@@ -158,5 +160,37 @@ describe("Trade Farming Contract", function () {
 
         });
 
+    });
+    */
+
+    describe("Skip Days", function () {
+        let currentDay, newDay;
+        let userReward, dailyReward;
+        it("Can skip days", async function () {
+            currentDay = Number(await tradeFarming.calcDay());
+            await increaseHours(25);
+            newDay = Number(await tradeFarming.calcDay());
+
+            expect(currentDay + 1).to.be.equal(newDay);
+        });
+
+        it("Understands uncalculated days", async function () { 
+            expect(await tradeFarming.isCalculated()).to.be.equal(false);
+        });
+
+        it("Calculates new days after swaps", async function () {
+            await tradeFarming.connect(addr1).swapExactETHForTokens(0, pathEnT, addr1.address, 9999999999999, { value: ethers.utils.parseEther("1") });
+
+            expect(await tradeFarming.isCalculated()).to.be.equal(true);
+        });
+
+        it("Can calculate user rewards", async function() {
+            userReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
+            dailyReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).dailyRewards(currentDay)));
+            console.log(dailyReward);
+            
+            expect(dailyReward).to.be.equal(dailyReward);
+            expect(dailyReward).to.be.greaterThan(0);
+        });
     });
 });

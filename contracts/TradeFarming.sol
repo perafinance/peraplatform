@@ -350,6 +350,14 @@ contract TradeFarming is Ownable {
         );
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
     }
+
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts){
+        return routerContract.getAmountsOut(amountIn, path);
+    }
+    
+    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts){
+        return routerContract.getAmountsIn(amountOut, path);
+    }
 }
 
 // bölü 0 ları engelle

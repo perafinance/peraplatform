@@ -103,7 +103,7 @@ describe("Trade Farming Contract", function () {
         });
 
         it("ETH for Exact Tokens and record volumes - then check for not remaining coins", async function () {
-            let amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther("0.1"), pathTnE);
+            let amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther("300"), pathTnE);
 
             await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));

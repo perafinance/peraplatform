@@ -14,14 +14,6 @@ async function increaseHours(value) {
     await provider.send('evm_mine');
 }
 
-async function getBalances(address, TFToken) {
-    let balances = [];
-    balances[0] = await provider.getBalance(address);
-    balances[1] = await TFToken.balanceOf(address);
-
-    return balances;
-}
-
 async function getBlockTiemstamp() {
     let block_number, block, block_timestamp;
 
@@ -83,7 +75,7 @@ describe("Trade Farming Contract", function () {
 
     
     describe("Swap", function () {
-        let userBalances = [], newBalances = [];
+        let userBalances = [], newBalances = [], contractBalance;
         let bTimestamp;
         let initialVolume, volume = 0, expectedVolume = 0;
 
@@ -107,11 +99,13 @@ describe("Trade Farming Contract", function () {
 
             volume = newBalances[1] - userBalances[1];
             expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
-            expect(volume).to.be.equal(expectedVolume);
+            expect(Math.ceil(volume)).to.be.equal(Math.ceil(expectedVolume));
         });
 
-        it("Swaps ETH for Exact Tokens and record volumes", async function () {
-            await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp * 2, { value: ethers.utils.parseEther("2") });
+        it("ETH for Exact Tokens and record volumes - then check for not remaining coins", async function () {
+            let amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther("0.1"), pathTnE);
+
+            await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther("300"), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
 
@@ -119,11 +113,14 @@ describe("Trade Farming Contract", function () {
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
 
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
-            expect(newBalances[1]).to.be.equal(userBalances[1] + 300);
+            expect(Math.ceil(newBalances[1])).to.be.equal(Math.ceil(userBalances[1] + 300));
 
             volume = newBalances[1] - userBalances[1];
             expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
-            expect(volume).to.be.equal(expectedVolume);
+            expect(Math.ceil(volume)).to.be.equal(Math.ceil(expectedVolume));
+
+            contractBalance = Number(ethers.utils.formatEther(await provider.getBalance(tradeFarming.address)));
+            expect(contractBalance).to.be.equal(0);
         });
 
 
@@ -140,7 +137,7 @@ describe("Trade Farming Contract", function () {
 
             volume = userBalances[1] - newBalances[1];
             expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
-            expect(volume).to.be.equal(expectedVolume);
+            expect(Math.ceil(volume)).to.be.equal(Math.ceil(expectedVolume));
         });
 
         it("Tokens for Exact ETH and record volumes", async function () {
@@ -156,7 +153,7 @@ describe("Trade Farming Contract", function () {
 
             volume = userBalances[1] - newBalances[1];
             expectedVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, 0))) - initialVolume;
-            // MAY HAVE PROBLEMS // expect(volume).to.be.equal(expectedVolume);
+            expect(Math.ceil(volume)).to.be.equal(Math.ceil(expectedVolume));
 
         });
 
@@ -166,6 +163,7 @@ describe("Trade Farming Contract", function () {
     describe("Skip Days", function () {
         let currentDay, newDay;
         let userReward, dailyReward;
+        let userVolume, dailyVolume;
         it("Can skip days", async function () {
             currentDay = Number(await tradeFarming.calcDay());
             await increaseHours(25);
@@ -190,6 +188,18 @@ describe("Trade Farming Contract", function () {
             
             expect(dailyReward).to.be.equal(userReward);
             expect(dailyReward).to.be.greaterThan(0);
+        });
+
+        it("Doesn't calculate volumes after the end day", async function () {
+            await increaseHours(10*24);
+            newDay = Number(await tradeFarming.calcDay());
+            await tradeFarming.connect(addr1).swapExactETHForTokens(0, pathEnT, addr1.address, 9999999999999, { value: ethers.utils.parseEther("1") });
+
+            userVolume = Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, newDay)));
+            dailyVolume = Number(ethers.utils.formatEther(await tradeFarming.dailyVolumes(newDay)));
+
+            expect(userVolume).to.be.equal(0);
+            expect(dailyVolume).to.be.equal(0);
         });
     });
 });

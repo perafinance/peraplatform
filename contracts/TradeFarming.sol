@@ -229,16 +229,10 @@ contract TradeFarming is Ownable {
         ) tradedDays[msg.sender].add(calcDay());
         require(msg.value > 0, "Not enough balance!");
 
-        /*
-        address[] memory path = new address[](2);
-        path[0] = routerContract.WETH();
-        path[1] = address(tokenContract);
-        */
-
         out = routerContract.swapExactETHForTokens{value: msg.value}(
             amountOutMin,
             path,
-            to, // change from msg.sender
+            to,
             deadline
         );
         if (lastAddedDay != totalDays) tradeRecorder(out[out.length - 1]);
@@ -254,12 +248,6 @@ contract TradeFarming is Ownable {
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
 
-        /*
-        address[] memory path = new address[](2);
-        path[0] = routerContract.WETH();
-        path[1] = address(tokenContract);
-        */
-
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(msg.value >= volume, "Not enough balance!");
 
@@ -270,7 +258,7 @@ contract TradeFarming is Ownable {
             routerContract.swapETHForExactTokens{value: volume}(
                 amountOut,
                 path,
-                to, // change from msg.sender
+                to,
                 deadline
             );
     }
@@ -295,19 +283,13 @@ contract TradeFarming is Ownable {
             "Unsuccesful token transfer!"
         );
 
-        /*
-        address[] memory path = new address[](2);
-        path[0] = address(tokenContract);
-        path[1] = routerContract.WETH();
-        */
-
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
         return
             routerContract.swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
                 path,
-                to, // change from msg.sender
+                to,
                 deadline
             );
     }
@@ -327,12 +309,6 @@ contract TradeFarming is Ownable {
             "Not enough allowance!"
         );
 
-        /*
-        address[] memory path = new address[](2);
-        path[0] = address(tokenContract);
-        path[1] = routerContract.WETH();
-        */
-
         require(
             tokenContract.transferFrom(
                 msg.sender,
@@ -345,7 +321,7 @@ contract TradeFarming is Ownable {
             amountOut,
             amountInMax,
             path,
-            to, // change from msg.sender
+            to,
             deadline
         );
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
@@ -368,3 +344,9 @@ contract TradeFarming is Ownable {
 
 //TODO: Make prettier looked
 //https://docs.soliditylang.org/en/v0.8.7/style-guide.html
+
+/*
+    address[] memory path = new address[](2);
+    path[0] = routerContract.WETH();
+    path[1] = address(tokenContract);
+*/

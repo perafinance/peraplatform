@@ -175,7 +175,7 @@ contract TradeFarming is Ownable {
             }
         }
         require(totalRewardOfUser > 0, "No reward!");
-        require(tokenContract.transfer(msg.sender, totalRewardOfUser));
+        require(rewardToken.transfer(msg.sender, totalRewardOfUser));
     }
 
     // Sadece hesaplaması güncellenen günler için toplam ödülü döner

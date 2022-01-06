@@ -71,9 +71,10 @@ describe("Trade Farming Test", function () {
 
     describe("Trade Farming", function () {
         let bTimestamp, currentDay;
-        let total_volumes;
+        let total_volumes = 0;
         let initial_balances = [];
         let daily_volumes = [];
+        let reward_balances = [], new_reward_balances = [];
 
         before(async function () {
             await TFToken.connect(owner).approve(tradeFarming.address, ethers.constants.MaxUint256);
@@ -89,6 +90,10 @@ describe("Trade Farming Test", function () {
             initial_balances[1] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address))));
             initial_balances[2] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr2.address))));
 
+            reward_balances[0] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(owner.address))));
+            reward_balances[1] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
+            reward_balances[2] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr2.address))));
+
         });
 
         it("Day#0", async function () {
@@ -96,8 +101,8 @@ describe("Trade Farming Test", function () {
             let volumes = ["1000", "1000", "1000"];
             let balances = [];
             let daily_records = [];
-            
-            total_volumes = Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
+
+            total_volumes += Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
 
             amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
             await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
@@ -117,12 +122,68 @@ describe("Trade Farming Test", function () {
             daily_volumes[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.dailyVolumes(currentDay))));
 
             expectArgsEqual(balances[0] - initial_balances[0], daily_records[0], Number(volumes[0]));
-            expect(daily_volumes).to.be.equal(Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]));
-            expect(Number(await tradeFarming.calcDay())).to.be.equal(currentDay);
+
+            expect(daily_volumes[0]).to.be.equal(Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]));
+            expect(Number(await tradeFarming.calcDay())).to.be.equal(0);
         });
 
         it("Day#1", async function () {
+            let amountsIn;
+            let volumes = ["500", "500", "2000"];
+            let balances = [];
+            let daily_records = [];
+            let rewards = [];
+            let previous_volumes;
 
+            await increaseHours(25);
+            currentDay = Number(await tradeFarming.calcDay());
+            expect(Number(currentDay)).to.be.equal(1);
+
+
+            total_volumes += Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
+
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
+            await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
+            balances[0] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(owner.address))));
+            daily_records[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(owner.address, currentDay))));
+
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathTnE);
+            await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther(volumes[1]), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
+            balances[1] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address))));
+            daily_records[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, currentDay))));
+
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathTnE);
+            await tradeFarming.connect(addr2).swapETHForExactTokens(ethers.utils.parseEther(volumes[2]), pathEnT, addr2.address, bTimestamp * 2, { value: amountsIn[1] });
+            balances[2] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr2.address))));
+            daily_records[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr2.address, currentDay))));
+
+            daily_volumes[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.dailyVolumes(currentDay))));
+
+            expectArgsEqual(balances[0] - initial_balances[0], daily_records[0], Number(volumes[0]));
+            expectArgsEqual(balances[1] - initial_balances[1], daily_records[1], Number(volumes[1]));
+            expectArgsEqual(balances[2] - initial_balances[2], daily_records[2], Number(volumes[2]));
+
+            expect(daily_volumes[1]).to.be.equal(Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]));            
+            expect(Number(await tradeFarming.calcDay())).to.be.equal(1);
+
+            previous_volumes = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.previousVolumes(1))));
+            let tbe = ((((total_volumes - daily_volumes[1]) * currentDay) + (PREVIOUS_DAYS * Number(TOKEN_COUNT))) / 11)
+            expect(previous_volumes).to.be.equal(tbe);
+
+            rewards[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(owner).calculateUserRewards())));
+            rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
+            rewards[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr2).calculateUserRewards())));
+
+            expectArgsEqual(rewards[0], rewards[1], rewards[2]);
+            
+            await tradeFarming.connect(owner).claimAllRewards();
+
+            new_reward_balances[0] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(owner.address))));
+
+            expect(new_reward_balances[0]).to.be.equal(reward_balances[0] + rewards[0]);
+            
+            rewards[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(owner).calculateUserRewards())));
+            expect(rewards[0]).to.be.equal(0);
         });
     });
 

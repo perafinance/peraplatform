@@ -92,8 +92,11 @@ describe("Trade Farming Contract", function () {
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
 
+            /*
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+            */            
+            
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
             expect(newBalances[1]).to.be.greaterThan(userBalances[1]);
 
@@ -109,9 +112,10 @@ describe("Trade Farming Contract", function () {
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
 
+            /*
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
-
+            */
             expect(userBalances[0]).to.be.greaterThan(newBalances[0]);
             expect(Math.ceil(newBalances[1])).to.be.equal(Math.ceil(userBalances[1] + 300));
 
@@ -129,8 +133,10 @@ describe("Trade Farming Contract", function () {
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
 
+            /*
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
+            */
 
             expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
             expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
@@ -145,9 +151,10 @@ describe("Trade Farming Contract", function () {
             newBalances[0] = Number(ethers.utils.formatEther(await provider.getBalance(addr1.address)));
             newBalances[1] = Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address)));
 
+            /*
             console.log("Ether Balance: " + userBalances[0] + " -> " + newBalances[0]);
             console.log("DAI Balance: " + userBalances[1] + " -> " + newBalances[1]);
-
+            */
             expect(newBalances[0]).to.be.greaterThan(userBalances[0]);
             expect(userBalances[1]).to.be.greaterThan(newBalances[1]);
 
@@ -189,7 +196,7 @@ describe("Trade Farming Contract", function () {
             expect(dailyReward).to.be.equal(userReward);
             expect(dailyReward).to.be.greaterThan(0);
         });
-
+        
         it("Doesn't calculate volumes after the end day", async function () {
             await increaseHours(10*24);
             newDay = Number(await tradeFarming.calcDay());
@@ -200,6 +207,28 @@ describe("Trade Farming Contract", function () {
 
             expect(userVolume).to.be.equal(0);
             expect(dailyVolume).to.be.equal(0);
+        });
+    });
+
+    describe("Claim", function () {
+        let currentDay;
+        it("Can claim rewards", async function () {
+            console.log(Number(ethers.utils.formatEther(await tradeFarming.totalRewardBalance())));
+            console.log(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).dailyRewards(0))));
+            console.log(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).dailyRewards(1))));
+
+            currentDay = Number(await tradeFarming.calcDay());
+            console.log(currentDay);
+            userReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
+
+            let prev_reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
+            await tradeFarming.connect(addr1).claimAllRewards();
+            await tradeFarming.connect(addr1).claimAllRewards(); //FIXME:
+            newUserReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
+
+            let reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
+            console.log("|||||", userReward, newUserReward, prev_reward_balance, reward_balance);
+            expect(reward_balance - prev_reward_balance).to.be.equal(userReward);
         });
     });
 });

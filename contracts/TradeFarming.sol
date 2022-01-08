@@ -215,7 +215,7 @@ contract TradeFarming is Ownable {
 
     // Ödülleri hesaplanmamış bir gün olup olmadığını döner
     function isCalculated() external view returns (bool) {
-        return !(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays);
+        return (!(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) || lastAddedDay == totalDays);
     }
 
     function swapExactETHForTokens(

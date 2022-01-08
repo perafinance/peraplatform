@@ -213,21 +213,30 @@ describe("Trade Farming Contract", function () {
     describe("Claim", function () {
         let currentDay;
         it("Can claim rewards", async function () {
-            console.log(Number(ethers.utils.formatEther(await tradeFarming.totalRewardBalance())));
-            console.log(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).dailyRewards(0))));
-            console.log(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).dailyRewards(1))));
-
             currentDay = Number(await tradeFarming.calcDay());
-            console.log(currentDay);
             userReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
+
+            for(let i=0; i < currentDay; i++){
+                let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
+                if (rew != 0) {
+                    console.log("day", i, "reward", rew);
+                }
+            }
 
             let prev_reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
             await tradeFarming.connect(addr1).claimAllRewards();
+
+            for(let i=0; i < currentDay; i++){
+                let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
+                if (rew != 0) {
+                    console.log("day", i, "reward", rew);
+                }
+            }
+            
             await tradeFarming.connect(addr1).claimAllRewards(); //FIXME:
             newUserReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
 
             let reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
-            console.log("|||||", userReward, newUserReward, prev_reward_balance, reward_balance);
             expect(reward_balance - prev_reward_balance).to.be.equal(userReward);
         });
     });

@@ -163,7 +163,7 @@ contract TradeFarming is Ownable {
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = 1000; // FIXME: minimum ödül oranını (hassasiyeti) belirtiyor olacak bu. o yüzden çok daha büyütmeliyiz. (muldiv kullan)
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
-            if (tradedDays[msg.sender].at(i) < lastAddedDay) {
+            if (tradedDays[msg.sender].at(i) < lastAddedDay) { // FIXME: Test1 de arrayin son değeri buraya girmiyor
                 rewardRate =
                     (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
                         1000) /

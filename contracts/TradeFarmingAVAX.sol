@@ -297,6 +297,11 @@ contract TradeFarming is Ownable {
             "Unsuccesful token transfer!"
         );
 
+        if (
+            tokenContract.allowance(address(this), address(routerContract)) <
+            amountIn
+        ) tokenContract.approve(address(routerContract), MAX_UINT);
+
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
         return
             routerContract.swapExactTokensForAVAX(
@@ -330,6 +335,11 @@ contract TradeFarming is Ownable {
                 routerContract.getAmountsIn(amountOut, path)[0]
             )
         );
+
+        if (
+            tokenContract.allowance(address(this), address(routerContract)) <
+            amountInMax
+        ) tokenContract.approve(address(routerContract), MAX_UINT);
 
         out = routerContract.swapTokensForExactAVAX(
             amountOut,

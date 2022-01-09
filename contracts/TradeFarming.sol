@@ -297,6 +297,11 @@ contract TradeFarming is Ownable {
             "Unsuccesful token transfer!"
         );
 
+        if (
+            tokenContract.allowance(address(this), address(routerContract)) <
+            amountIn
+        ) tokenContract.approve(address(routerContract), MAX_UINT);
+
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
         return
             routerContract.swapExactTokensForETH(
@@ -331,6 +336,11 @@ contract TradeFarming is Ownable {
             )
         );
 
+        if (
+            tokenContract.allowance(address(this), address(routerContract)) <
+            amountInMax
+        ) tokenContract.approve(address(routerContract), MAX_UINT);
+
         out = routerContract.swapTokensForExactETH(
             amountOut,
             amountInMax,
@@ -359,9 +369,6 @@ contract TradeFarming is Ownable {
 
     /**
         @dev Remco Bloemen's muldiv function https://2π.com/21/muldiv/
-        @dev Reasons why we use it:
-            1. it is cheap on gas
-            2. it doesn't revert where (a*b) overflows and (a*b)/c doesn't
     */
     function muldiv(
         uint256 a,

@@ -114,7 +114,7 @@ contract TradeFarming is Ownable {
         view
         returns (uint256)
     {
-        return (dailyVolumes[_day] * PRECISION) / previousVolumes[_day];
+        return muldiv(dailyVolumes[_day], PRECISION, previousVolumes[_day]);
     }
 
     /*
@@ -125,9 +125,8 @@ contract TradeFarming is Ownable {
         uint256 _pd = previousDay + lastAddedDay + 1;
         require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
         previousVolumes[lastAddedDay + 1] =
-            (previousVolumes[lastAddedDay] *
-                (_pd - 1) +
-                dailyVolumes[lastAddedDay]) /
+            muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +
+            dailyVolumes[lastAddedDay] /
             _pd;
 
         /*
@@ -144,14 +143,17 @@ contract TradeFarming is Ownable {
             volumeChange = 900_000_000;
         }
 
-        dailyRewards[lastAddedDay] =
-            ((totalRewardBalance / (totalDays - lastAddedDay)) * volumeChange) /
-            PRECISION;
+        dailyRewards[lastAddedDay] = muldiv(
+            (totalRewardBalance / (totalDays - lastAddedDay)),
+            volumeChange,
+            PRECISION
+        );
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
 
         lastAddedDay += 1;
 
-        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays) addNextDaysToAverage();
+        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays)
+            addNextDaysToAverage();
     }
 
     // Mevcut gün hariç tüm günlere ait ödülleri claim et
@@ -162,16 +164,20 @@ contract TradeFarming is Ownable {
         }
 
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = PRECISION; // FIXME: minimum ödül oranını (hassasiyeti) belirtiyor olacak bu. o yüzden çok daha büyütmeliyiz. (muldiv kullan)
+        uint256 rewardRate = PRECISION;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
-            if (tradedDays[msg.sender].at(i) < lastAddedDay) { // FIXME: Test1 de arrayin son değeri buraya girmiyor
-                rewardRate =
-                    (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
-                        PRECISION) /
-                    dailyVolumes[tradedDays[msg.sender].at(i)];
-                totalRewardOfUser +=
-                    (rewardRate * dailyRewards[tradedDays[msg.sender].at(i)]) /
-                    PRECISION;
+            if (tradedDays[msg.sender].at(i) < lastAddedDay) {
+                // FIXME: Test1 de arrayin son değeri buraya girmiyor
+                rewardRate = muldiv(
+                    volumeRecords[msg.sender][tradedDays[msg.sender].at(i)],
+                    PRECISION,
+                    dailyVolumes[tradedDays[msg.sender].at(i)]
+                );
+                totalRewardOfUser += muldiv(
+                    rewardRate,
+                    dailyRewards[tradedDays[msg.sender].at(i)],
+                    PRECISION
+                );
                 tradedDays[msg.sender].remove(tradedDays[msg.sender].at(i));
             }
         }
@@ -180,43 +186,50 @@ contract TradeFarming is Ownable {
     }
 
     // Sadece hesaplaması güncellenen günler için toplam ödülü döner
-    // FIXME: hesaplanmamış günü de gösterebilecek bir yol düşün 
+    // FIXME: hesaplanmamış günü de gösterebilecek bir yol düşün
     function calculateUserRewards() external view returns (uint256) {
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = PRECISION; // FIXME:
+        uint256 rewardRate = PRECISION;
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) {
-                rewardRate =
-                    (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
-                        PRECISION) /
-                    dailyVolumes[tradedDays[msg.sender].at(i)];
-                totalRewardOfUser +=
-                    (rewardRate * dailyRewards[tradedDays[msg.sender].at(i)]) /
-                    PRECISION;
+                rewardRate = muldiv(
+                    volumeRecords[msg.sender][tradedDays[msg.sender].at(i)],
+                    PRECISION,
+                    dailyVolumes[tradedDays[msg.sender].at(i)]
+                );
+                totalRewardOfUser += muldiv(
+                    rewardRate,
+                    dailyRewards[tradedDays[msg.sender].at(i)],
+                    PRECISION
+                );
             }
         }
         return totalRewardOfUser;
     }
 
     // Bir kullanıcının belirtilen gündeki ödülünü döner
-    function calculateDailyUserReward(uint _day) external view returns (uint256) {
+    function calculateDailyUserReward(uint256 _day)
+        external
+        view
+        returns (uint256)
+    {
         uint256 rewardOfUser = 0;
-        uint256 rewardRate = PRECISION; // FIXME:  
+        uint256 rewardRate = PRECISION;
         if (_day < lastAddedDay && tradedDays[msg.sender].contains(_day)) {
-                rewardRate =
-                    (volumeRecords[msg.sender][_day] *
-                        PRECISION) /
-                    dailyVolumes[_day];
-                rewardOfUser +=
-                    (rewardRate * dailyRewards[_day]) /
-                    PRECISION;
-        }   
+            rewardRate = muldiv(
+                volumeRecords[msg.sender][_day],
+                PRECISION,
+                dailyVolumes[_day]
+            );
+            rewardOfUser += muldiv(rewardRate, dailyRewards[_day], PRECISION);
+        }
         return rewardOfUser;
     }
 
     // Ödülleri hesaplanmamış bir gün olup olmadığını döner
     function isCalculated() external view returns (bool) {
-        return (!(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) || lastAddedDay == totalDays);
+        return (!(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) ||
+            lastAddedDay == totalDays);
     }
 
     function swapExactETHForTokens(
@@ -328,15 +341,23 @@ contract TradeFarming is Ownable {
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
     }
 
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts){
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts)
+    {
         return routerContract.getAmountsOut(amountIn, path);
     }
-    
-    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts){
+
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts)
+    {
         return routerContract.getAmountsIn(amountOut, path);
     }
 
-        /**
+    /**
         @dev Remco Bloemen's muldiv function https://2π.com/21/muldiv/
         @dev Reasons why we use it:
             1. it is cheap on gas
@@ -401,17 +422,5 @@ contract TradeFarming is Ownable {
     }
 }
 
-// bölü 0 ları engelle
-
-//TODO: Muldiv ve unchecked'ler ile çarpma işlemlerini daha güvenli hale getir
-//https://xn--2-umb.com/21/muldiv/
-//https://docs.soliditylang.org/en/v0.8.0/control-structures.html#checked-or-unchecked-arithmetic
-
 //TODO: Make prettier looked
 //https://docs.soliditylang.org/en/v0.8.7/style-guide.html
-
-/*
-    address[] memory path = new address[](2);
-    path[0] = routerContract.WETH();
-    path[1] = address(tokenContract);
-*/

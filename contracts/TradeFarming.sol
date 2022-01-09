@@ -37,6 +37,7 @@ contract TradeFarming is Ownable {
     mapping(address => EnumerableSet.UintSet) private tradedDays; // kullanıcıların yarıştığı günler
 
     uint256 constant MAX_UINT = 2**256 - 1;
+    uint256 constant PRECISION = 1_000_000_000;
 
     constructor(
         address _routerAddress,
@@ -113,7 +114,7 @@ contract TradeFarming is Ownable {
         view
         returns (uint256)
     {
-        return (dailyVolumes[_day] * 1000) / previousVolumes[_day];
+        return (dailyVolumes[_day] * PRECISION) / previousVolumes[_day];
     }
 
     /*
@@ -137,15 +138,15 @@ contract TradeFarming is Ownable {
 
         // Hacim değişimlerini %90 - %110 arasında kısıtlıyoruz
         uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
-        if (volumeChange > 1100) {
-            volumeChange = 1100;
-        } else if (volumeChange < 900) {
-            volumeChange = 900;
+        if (volumeChange > 1_100_000_000) {
+            volumeChange = 1_100_000_000;
+        } else if (volumeChange < 900_000_000) {
+            volumeChange = 900_000_000;
         }
 
         dailyRewards[lastAddedDay] =
             ((totalRewardBalance / (totalDays - lastAddedDay)) * volumeChange) /
-            1000;
+            PRECISION;
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
 
         lastAddedDay += 1;
@@ -161,16 +162,16 @@ contract TradeFarming is Ownable {
         }
 
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = 1000; // FIXME: minimum ödül oranını (hassasiyeti) belirtiyor olacak bu. o yüzden çok daha büyütmeliyiz. (muldiv kullan)
+        uint256 rewardRate = PRECISION; // FIXME: minimum ödül oranını (hassasiyeti) belirtiyor olacak bu. o yüzden çok daha büyütmeliyiz. (muldiv kullan)
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) { // FIXME: Test1 de arrayin son değeri buraya girmiyor
                 rewardRate =
                     (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
-                        1000) /
+                        PRECISION) /
                     dailyVolumes[tradedDays[msg.sender].at(i)];
                 totalRewardOfUser +=
                     (rewardRate * dailyRewards[tradedDays[msg.sender].at(i)]) /
-                    1000;
+                    PRECISION;
                 tradedDays[msg.sender].remove(tradedDays[msg.sender].at(i));
             }
         }
@@ -182,16 +183,16 @@ contract TradeFarming is Ownable {
     // FIXME: hesaplanmamış günü de gösterebilecek bir yol düşün 
     function calculateUserRewards() external view returns (uint256) {
         uint256 totalRewardOfUser = 0;
-        uint256 rewardRate = 1000; // FIXME:
+        uint256 rewardRate = PRECISION; // FIXME:
         for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) {
                 rewardRate =
                     (volumeRecords[msg.sender][tradedDays[msg.sender].at(i)] *
-                        1000) /
+                        PRECISION) /
                     dailyVolumes[tradedDays[msg.sender].at(i)];
                 totalRewardOfUser +=
                     (rewardRate * dailyRewards[tradedDays[msg.sender].at(i)]) /
-                    1000;
+                    PRECISION;
             }
         }
         return totalRewardOfUser;
@@ -200,15 +201,15 @@ contract TradeFarming is Ownable {
     // Bir kullanıcının belirtilen gündeki ödülünü döner
     function calculateDailyUserReward(uint _day) external view returns (uint256) {
         uint256 rewardOfUser = 0;
-        uint256 rewardRate = 1000; // FIXME:  
+        uint256 rewardRate = PRECISION; // FIXME:  
         if (_day < lastAddedDay && tradedDays[msg.sender].contains(_day)) {
                 rewardRate =
                     (volumeRecords[msg.sender][_day] *
-                        1000) /
+                        PRECISION) /
                     dailyVolumes[_day];
                 rewardOfUser +=
                     (rewardRate * dailyRewards[_day]) /
-                    1000;
+                    PRECISION;
         }   
         return rewardOfUser;
     }
@@ -333,6 +334,70 @@ contract TradeFarming is Ownable {
     
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts){
         return routerContract.getAmountsIn(amountOut, path);
+    }
+
+        /**
+        @dev Remco Bloemen's muldiv function https://2π.com/21/muldiv/
+        @dev Reasons why we use it:
+            1. it is cheap on gas
+            2. it doesn't revert where (a*b) overflows and (a*b)/c doesn't
+    */
+    function muldiv(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) private pure returns (uint256 result) {
+        require(denominator > 0);
+
+        uint256 prod0;
+        uint256 prod1;
+        assembly {
+            let mm := mulmod(a, b, not(0))
+            prod0 := mul(a, b)
+            prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+        }
+
+        if (prod1 == 0) {
+            assembly {
+                result := div(prod0, denominator)
+            }
+            return result;
+        }
+        require(prod1 < denominator);
+        uint256 remainder;
+        assembly {
+            remainder := mulmod(a, b, denominator)
+        }
+        assembly {
+            prod1 := sub(prod1, gt(remainder, prod0))
+            prod0 := sub(prod0, remainder)
+        }
+
+        uint256 twos = denominator & (~denominator + 1);
+        assembly {
+            denominator := div(denominator, twos)
+        }
+
+        assembly {
+            prod0 := div(prod0, twos)
+        }
+
+        assembly {
+            twos := add(div(sub(0, twos), twos), 1)
+        }
+        prod0 |= prod1 * twos;
+
+        uint256 inv = (3 * denominator) ^ 2;
+
+        inv *= 2 - denominator * inv;
+        inv *= 2 - denominator * inv;
+        inv *= 2 - denominator * inv;
+        inv *= 2 - denominator * inv;
+        inv *= 2 - denominator * inv;
+        inv *= 2 - denominator * inv;
+
+        result = prod0 * inv;
+        return result;
     }
 }
 

@@ -216,24 +216,23 @@ describe("Trade Farming Contract", function () {
             currentDay = Number(await tradeFarming.calcDay());
             userReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
 
-            for(let i=0; i < currentDay; i++){
-                let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
-                if (rew != 0) {
-                    console.log("day", i, "reward", rew);
-                }
-            }
+            // for(let i=0; i < currentDay; i++){
+            //     let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
+            //     if (rew != 0) {
+            //         console.log("day", i, "reward", rew);
+            //     }
+            // }
 
             let prev_reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
             await tradeFarming.connect(addr1).claimAllRewards();
 
-            for(let i=0; i < currentDay; i++){
-                let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
-                if (rew != 0) {
-                    console.log("day", i, "reward", rew);
-                }
-            }
+            // for(let i=0; i < currentDay; i++){
+            //     let rew = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateDailyUserReward(i)));
+            //     if (rew != 0) {
+            //         console.log("day", i, "reward", rew);
+            //     }
+            // }
             
-            await tradeFarming.connect(addr1).claimAllRewards(); //FIXME:
             newUserReward = Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards()));
 
             let reward_balance = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));

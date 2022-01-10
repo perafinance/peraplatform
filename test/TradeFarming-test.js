@@ -218,7 +218,6 @@ describe("Trade Farming Test", function () {
             expectArgsEqual(balances[0] - initial_balances[0], daily_records[0], Number(volumes[0]));
             expectArgsEqual(balances[1] - initial_balances[1], daily_records[1], Number(volumes[1]));
             expectArgsEqual(balances[2] - initial_balances[2], daily_records[2], Number(volumes[2]));
-
             expect(daily_volumes[2]).to.be.equal(Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]));  
             expect(Number(await tradeFarming.calcDay())).to.be.equal(2);
 
@@ -229,12 +228,20 @@ describe("Trade Farming Test", function () {
             rewards[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(owner).calculateUserRewards())));
             rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
             rewards[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr2).calculateUserRewards())));
+            let rew0before = rewards[0];
+            let rew1before = rewards[1];
             //expect(rewards[1] * 2).to.be.equal(rewards[2]); // NOTE: matematiksel hata var. dillerle ilgili, sorun yok
-
+            await tradeFarming.connect(owner).claimAllRewards();
             await tradeFarming.connect(addr1).claimAllRewards();
 
+            rewards[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(owner).calculateUserRewards())));
+            rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
+            rewards[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr2).calculateUserRewards())));
+
+            new_reward_balances[0] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(owner.address))));
             new_reward_balances[1] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
-            expect(new_reward_balances[1]).to.be.equal(reward_balances[1] + rewards[1]);
+            expect(new_reward_balances[0]).to.be.equal(reward_balances[0] + rew0before);
+            expect(new_reward_balances[1]).to.be.equal(reward_balances[1] + rew1before);
             
             rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
             expect(rewards[1]).to.be.equal(0);
@@ -267,9 +274,18 @@ describe("Trade Farming Test", function () {
             expect(daily_volumes[3]).to.be.equal(0);
             expect(daily_records[0]).to.be.equal(0);
 
-            await tradeFarming.connect(owner).claimAllRewards();
+            //await tradeFarming.connect(owner).claimAllRewards();
+            rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
             await tradeFarming.connect(addr1).claimAllRewards();
+            rewards[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr2).calculateUserRewards())));
             await tradeFarming.connect(addr2).claimAllRewards();
+
+            new_reward_balances[1] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr1.address))));
+            rewards[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.connect(addr1).calculateUserRewards())));
+
+            new_reward_balances[2] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(addr2.address))));
+            expect(new_reward_balances[2]).to.be.equal(reward_balances[2] + rewards[2]); 
+
 
             expect(Number(ethers.utils.formatEther(await tradeFarming.totalRewardBalance()))).to.be.equal(0);
             expect(await tradeFarming.totalRewardBalance()).to.be.equal(0);

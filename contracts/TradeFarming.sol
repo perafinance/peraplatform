@@ -165,9 +165,12 @@ contract TradeFarming is Ownable {
 
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = PRECISION;
-        for (uint256 i = 0; i < tradedDays[msg.sender].length(); i++) {
+        
+        uint256 _len = tradedDays[msg.sender].length();
+        uint256[] memory _removeDays = new uint256[](_len);
+
+        for (uint256 i = 0; i < _len; i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) {
-                // FIXME: Test1 de arrayin son değeri buraya girmiyor
                 rewardRate = muldiv(
                     volumeRecords[msg.sender][tradedDays[msg.sender].at(i)],
                     PRECISION,
@@ -178,9 +181,15 @@ contract TradeFarming is Ownable {
                     dailyRewards[tradedDays[msg.sender].at(i)],
                     PRECISION
                 );
-                tradedDays[msg.sender].remove(tradedDays[msg.sender].at(i));
+                _removeDays[i] = tradedDays[msg.sender].at(i);
+                //tradedDays[msg.sender].remove(tradedDays[msg.sender].at(i));
             }
         }
+
+        for (uint256 i = 0; i < _len; i++) {          
+            tradedDays[msg.sender].remove(_removeDays[i]);
+        }
+
         require(totalRewardOfUser > 0, "No reward!");
         require(rewardToken.transfer(msg.sender, totalRewardOfUser));
     }

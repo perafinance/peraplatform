@@ -88,7 +88,7 @@ contract TradeFarmingAVAX is Ownable {
         Kaçıncı günde olduğumuzu hesaplayan fonksiyon
     */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 1 days;
+        return (block.timestamp - deployTime) / 2 minutes;
     }
 
     /*

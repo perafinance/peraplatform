@@ -7,7 +7,7 @@ const TF_TOKEN_ADDRESS = "0x2292b53701C119bB7ee2437214dB5E101B7B780c";
 const TOKEN_COUNT = "30000000";
 const PREVIOUS_VOLUME = ethers.utils.parseUnits(TOKEN_COUNT, 18);
 const PREVIOUS_DAYS = 10;
-const TOTAL_DAYS = 5;
+const TOTAL_DAYS = 7;
 
 async function main() {
 
@@ -21,8 +21,10 @@ async function main() {
     console.log("Contract address:", tf.address);
 
     let token = new ethers.Contract(TF_TOKEN_ADDRESS, tokenTF.abi, provider);
-    await token.connect(deployer).approve(tf.address, ethers.constants.MaxUint256);
-    await tf.connect(deployer).depositRewardTokens(PREVIOUS_VOLUME);
+    let tx0 = await token.connect(deployer).approve(tf.address, ethers.constants.MaxUint256);
+    await tx0.wait();
+    let tx1 = await tf.connect(deployer).depositRewardTokens(PREVIOUS_VOLUME);
+    await tx1.wait();
 }
 
 main()

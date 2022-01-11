@@ -1,44 +1,72 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-/* 
-    DEX'lerdeki swap fonksiyonlarını ve kullandığım lib'leri interface'e ekledim
-    Tüm Uniswap v2 forku dexler ile uyumlu çalışacak durumdayız -> yani Avalanche'ta hepsi
-*/
 import "./interfaces/IPangolinRouter.sol";
-/*
-    ERC-20 Interface'i
-    Swap ve ödül tokenlarında kullanılacak
-*/
 import "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-// çalışacak olan trade farming kontratı bu kısım. sonrasında bir factory kontratın bu kontratı üreteceği bir yapıya geçeceğiz
-// bu örnek AVAX-token çiftleri için token cinsinden hacim takip ederek yarışma düzenliyor
-contract TradeFarmingAVAX is Ownable {
-    using EnumerableSet for EnumerableSet.UintSet; // kullanıcıların trade ettiği günleri tutacağımız set
+/// @author Ulaş Erdoğan
+/// @title Trade Farming Contract for any ETH - Token Pool
+/// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
+/// @dev Integradted version for Avalanche - Pangolin Pools
+contract TradeFarming is Ownable {
+    // DEX router interface
+    IPangolinRouter routerContract;
+    // Token of pair interface
+    IERC20 tokenContract;
+    // Rewarding token interface
+    IERC20 rewardToken;
 
-    uint256 private immutable deployTime; // yarışma başlama anı timestampi
-    IPangolinRouter routerContract; // router instanceımız
-    IERC20 tokenContract; // yarışma token contractımız
-    IERC20 rewardToken; // ödül token contractımız (png)
+    // Using OpenZeppelin's EnumerableSet Util
+    using EnumerableSet for EnumerableSet.UintSet;
 
-    mapping(uint256 => uint256) public previousVolumes; // belirtilen günden önceki günlerin hacim ortalaması kaç
-    uint256 private previousDay; // yarışma başlamadan önce kaç günlük hacim ortalaması verisi dahil edildi
-    uint256 private lastAddedDay = 0; // en son hangi günde önceki günün ortalama hesabı yapıldı
-    uint256 public totalRewardBalance = 0; // dağıtılmamış toplam ödül havuzu miktarı
+    // Track of days' previous volume average
+    /// @dev It's the average of previous days and [0, specified day)
+    // uint256 day - any day of competition -> uint256 volume - average volume
+    mapping(uint256 => uint256) public previousVolumes;
+    // Users daily volume records
+    // address user -> uint256 day -> uint256 volume
+    mapping(address => mapping(uint256 => uint256)) public volumeRecords;
+    // Daily total volumes
+    // uint256 day -> uint256 volume
+    mapping(uint256 => uint256) public dailyVolumes;
+    // Daily calculated total rewards
+    mapping(uint256 => uint256) public dailyRewards;
+    // Users unclaimed traded days
+    // address user -> uint256[] days
+    mapping(address => EnumerableSet.UintSet) private tradedDays;
+
+    // Undistributed total rewards
+    uint256 public totalRewardBalance = 0;
+    // Total days of the competition
     uint256 public totalDays;
 
-    mapping(address => mapping(uint256 => uint256)) public volumeRecords; // kullanıcıların yarışma günlerine ait hacimleri
-    mapping(uint256 => uint256) public dailyVolumes; // günlük toplam hacimler
-    mapping(uint256 => uint256) public dailyRewards; // günlük ödüller
+    // Considered previous volume of the pair
+    uint256 private previousDay;
+    // Last calculation time of the competition
+    uint256 private lastAddedDay = 0;
+    // Deploying time of the competition
+    uint256 private immutable deployTime;
 
-    mapping(address => EnumerableSet.UintSet) private tradedDays; // kullanıcıların yarıştığı günler
-
+    // Max Uint Constant
     uint256 constant MAX_UINT = 2**256 - 1;
+    // Precision of reward calculations
     uint256 constant PRECISION = 1_000_000_000;
+    // Limiting the daily volume changes between 90% - 110%
+    uint256 constant UP_VOLUME_CHANGE_LIMIT = PRECISION * 110 / 100;
+    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = PRECISION * 90 / 100;
 
+    /**
+     * @notice Constructor function - takes the parameters of the competition
+     * @dev May need to be configurated for different chains
+     * @param _routerAddress IPangolinRouter01 - address of the DEX router contract
+     * @param _tokenAddress IERC20 - address of the token of the pair
+     * @param _rewardAddress IERC20 - address of the reward token
+     * @param _previousVolume uint256 - average of previous days
+     * @param _previousDay uint256 - previous considered days
+     * @param _totalDays uint256 - total days of the competition
+     */
     constructor(
         address _routerAddress,
         address _tokenAddress,
@@ -58,144 +86,117 @@ contract TradeFarmingAVAX is Ownable {
         totalDays = _totalDays;
     }
 
-    // Ödül havuzuna (kontratın kendisi) token yatırmaya yarar
+    /////////// Contract Management Functions ///////////
+
+    /**
+     * @notice Increase the reward amount of the competition by Owner
+     * @dev The token need to be approved to the contract by Owner
+     * @param amount uint256 - amount of the reward token to be added
+     */
     function depositRewardTokens(uint256 amount) external onlyOwner {
         require(
             rewardToken.balanceOf(msg.sender) >= amount,
-            "Not enough balance!"
+            "[depositRewardTokens] Not enough balance!"
         );
         require(
             rewardToken.allowance(msg.sender, address(this)) >= amount,
-            "Not enough allowance!"
+            "[depositRewardTokens] Not enough allowance!"
         );
         totalRewardBalance += amount;
-        require(rewardToken.transferFrom(msg.sender, address(this), amount));
-    }
-
-    // Ödül havuzundan (kontratın kendisi) token çekmeye yarar
-    function withdrawRewardTokens(uint256 amount) external onlyOwner {
-        require(totalRewardBalance >= amount, "Not enough balance!");
-        totalRewardBalance -= amount;
-        require(rewardToken.transfer(msg.sender, amount));
-    }
-
-    // Yarışmanın toplam süresini değiştirmeye yarar
-    function changeTotalDays(uint256 _newTotalDays) external onlyOwner {
-        totalDays = _newTotalDays;
-    }
-
-    /*
-        Kaçıncı günde olduğumuzu hesaplayan fonksiyon
-    */
-    function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 2 minutes;
-    }
-
-    /*
-        Hacim kayıtlarını tutmak adına swap işleminden sonra çağıracağız
-        Modifier olarak kullanmıştım. İptal
-    */
-    function tradeRecorder(uint256 _volume) private {
-        if (calcDay() < totalDays) {
-            volumeRecords[msg.sender][calcDay()] += _volume;
-            dailyVolumes[calcDay()] += _volume;
-        }
-
-        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
-            addNextDaysToAverage();
-        }
-    }
-
-    /*
-        Belirlenen günün önceki günlerin ortalamasına göre ‰(binde) hacim değişimini verir
-    */
-    function calculateDayVolumeChange(uint256 _day)
-        private
-        view
-        returns (uint256)
-    {
-        return muldiv(dailyVolumes[_day], PRECISION, previousVolumes[_day]);
-    }
-
-    /*
-        fonksiyon en son hacim hesaplaması yapılan günün ertesi gününün hacmini de hesaplayarak ortalamaya ekler
-    */
-    function addNextDaysToAverage() private {
-        uint256 _cd = calcDay();
-        uint256 _pd = previousDay + lastAddedDay + 1;
-        require(lastAddedDay + 1 <= _cd, "Not ready to operate!");
-        previousVolumes[lastAddedDay + 1] =
-            muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +
-            dailyVolumes[lastAddedDay] /
-            _pd;
-
-        /*
-            Günlük ödül = (ödül havuzunda kalan miktar / kalan gün) * hacmin önceki güne göre değişimi
-            %10 ödül değişim sınırı var
-            Swap yoksa ödül yok
-        */
-
-        // Hacim değişimlerini %90 - %110 arasında kısıtlıyoruz
-        uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
-        if (volumeChange > 1_100_000_000) {
-            volumeChange = 1_100_000_000;
-        } else if (volumeChange < 900_000_000) {
-            volumeChange = 900_000_000;
-        }
-
-        dailyRewards[lastAddedDay] = muldiv(
-            (totalRewardBalance / (totalDays - lastAddedDay)),
-            volumeChange,
-            PRECISION
+        require(
+            rewardToken.transferFrom(msg.sender, address(this), amount),
+            "[depositRewardTokens] Unsuccesful reward token transfer from Owner to contract!"
         );
-        totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
-
-        lastAddedDay += 1;
-
-        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays)
-            addNextDaysToAverage();
     }
 
-    // Mevcut gün hariç tüm günlere ait ödülleri claim et
+    /**
+     * @notice Decrease and claim the "undistributed" reward amount of the competition by Owner
+     * @param amount uint256 - amount of the reward token to be added
+     */
+    function withdrawRewardTokens(uint256 amount) external onlyOwner {
+        require(
+            totalRewardBalance >= amount,
+            "[withdrawRewardTokens] Not enough balance!"
+        );
+        totalRewardBalance -= amount;
+        require(
+            rewardToken.transfer(msg.sender, amount),
+            "[withdrawRewardTokens] Unsuccesful reward token transfer from contract to Owner!"
+        );
+    }
+
+    /**
+     * @notice Change the total time of the competition
+     * @param newTotalDays uint256 - new time of the competition
+     */
+    function changeTotalDays(uint256 newTotalDays) external onlyOwner {
+        totalDays = newTotalDays;
+    }
+
+    /////////// Reward Viewing and Claiming Functions ///////////
+
+    /**
+     * @notice Claim the calculated rewards of the previous days
+     * @notice The rewards until the current day can be claimed
+     */
     function claimAllRewards() external {
-        // Önce tüm hacim hesaplamaları güncel mi kontrol edilir
+        // Firstly calculates uncalculated days rewards if there are
         if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
         }
 
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = PRECISION;
-        
-        uint256 _len = tradedDays[msg.sender].length();
-        uint256[] memory _removeDays = new uint256[](_len);
 
-        for (uint256 i = 0; i < _len; i++) {
+        uint256 len = tradedDays[msg.sender].length();
+        // Keep the claimed days to remove from the traded days set
+        uint256[] memory _removeDays = new uint256[](len);
+
+        for (uint256 i = 0; i < len; i++) {
             if (tradedDays[msg.sender].at(i) < lastAddedDay) {
+                // Calulates how much of the daily rewards the user can claim
                 rewardRate = muldiv(
                     volumeRecords[msg.sender][tradedDays[msg.sender].at(i)],
                     PRECISION,
                     dailyVolumes[tradedDays[msg.sender].at(i)]
                 );
+                // Adds the daily progress payment to total rewards
                 totalRewardOfUser += muldiv(
                     rewardRate,
                     dailyRewards[tradedDays[msg.sender].at(i)],
                     PRECISION
                 );
                 _removeDays[i] = tradedDays[msg.sender].at(i);
-                //tradedDays[msg.sender].remove(tradedDays[msg.sender].at(i));
             }
         }
 
-        for (uint256 i = 0; i < _len; i++) {          
+        // Remove the claimed days from the set
+        for (uint256 i = 0; i < len; i++) {
             tradedDays[msg.sender].remove(_removeDays[i]);
         }
 
-        require(totalRewardOfUser > 0, "No reward!");
-        require(rewardToken.transfer(msg.sender, totalRewardOfUser));
+        require(totalRewardOfUser > 0, "[claimAllRewards] No reward!");
+        require(
+            rewardToken.transfer(msg.sender, totalRewardOfUser),
+            "[claimAllRewards] Unsuccessful reward transfer!"
+        );
     }
 
-    // Sadece hesaplaması güncellenen günler için toplam ödülü döner
-    // FIXME: hesaplanmamış günü de gösterebilecek bir yol düşün
+    /**
+     * @notice Checks if the previous days rewards have been calculated
+     * @dev If it is false there might be some rewards that can be claimedu unseen
+     * @return bool - true if the previous days rewards have been calculated
+     */
+    function isCalculated() external view returns (bool) {
+        return (!(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) ||
+            lastAddedDay == totalDays);
+    }
+
+    /**
+     * @notice Calculates the calculated rewards of the users
+     * @dev If isCalculated function returns false, it might be bigger than the return of this function
+     * @return uint256 - total reward of the user
+     */
     function calculateUserRewards() external view returns (uint256) {
         uint256 totalRewardOfUser = 0;
         uint256 rewardRate = PRECISION;
@@ -216,67 +217,118 @@ contract TradeFarmingAVAX is Ownable {
         return totalRewardOfUser;
     }
 
-    // Bir kullanıcının belirtilen gündeki ödülünü döner
-    function calculateDailyUserReward(uint256 _day)
+    /**
+     * @notice Calculates the daily reward of an user if its calculated
+     * @param day uint256 - speciifed day of the competition
+     * @dev It returns 0 if the day is not calculated or its on the future
+     * @return uint256 - specified days daily reward of the user
+     */
+    function calculateDailyUserReward(uint256 day)
         external
         view
         returns (uint256)
     {
         uint256 rewardOfUser = 0;
         uint256 rewardRate = PRECISION;
-        if (_day < lastAddedDay && tradedDays[msg.sender].contains(_day)) {
+        if (day < lastAddedDay && tradedDays[msg.sender].contains(day)) {
             rewardRate = muldiv(
-                volumeRecords[msg.sender][_day],
+                volumeRecords[msg.sender][day],
                 PRECISION,
-                dailyVolumes[_day]
+                dailyVolumes[day]
             );
-            rewardOfUser += muldiv(rewardRate, dailyRewards[_day], PRECISION);
+            rewardOfUser += muldiv(rewardRate, dailyRewards[day], PRECISION);
         }
         return rewardOfUser;
     }
 
-    // Ödülleri hesaplanmamış bir gün olup olmadığını döner
-    function isCalculated() external view returns (bool) {
-        return (!(lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) ||
-            lastAddedDay == totalDays);
+    /////////// UI Helper Functions ///////////
+
+    /**
+     @dev Interacts with the router contract and allows reading in-out values without connecting to the router
+     @dev @param @return See the details at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#getamountsout
+     */
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts)
+    {
+        return routerContract.getAmountsOut(amountIn, path);
     }
 
+    /**
+     @dev Interacts with the router contract and allows reading in-out values without connecting to the router
+     @dev @param @return See the details at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#getamountsin
+     */
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts)
+    {
+        return routerContract.getAmountsIn(amountOut, path);
+    }
+
+    /////////// Swap Functions ///////////
+
+    /**
+     * @notice Swaps the specified amount of AVAX for some tokens by connecting to the DEX Router and records the trade volumes
+     * @dev Exact amount of the value has to be sended as "value"
+     * @dev @param @return Takes and returns the same parameters and values with router functions. 
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexactAVAXfortokens
+     */
     function swapExactAVAXForTokens(
         uint256 amountOutMin,
         address[] calldata path,
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory out) {
+        // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(msg.value > 0, "Not enough balance!");
+        require(msg.value > 0, "[swapExactAVAXForTokens] Not enough msg.value!");
 
+        // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
             amountOutMin,
             path,
             to,
             deadline
         );
+        //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(out[out.length - 1]);
     }
 
+    /**
+     * @notice Swaps some amount of AVAX for specified amounts of tokens by connecting to the DEX Router and 
+               records the trade volumes
+     * @dev Equal or bigger amount of value -to be protected from slippage- has to be sended as "value", 
+            unused part of the value will be returned.
+     * @dev @param @return Takes and returns the same parameters and values with router functions. 
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapAVAXforexacttokens
+     */
     function swapAVAXForExactTokens(
         uint256 amountOut,
         address[] calldata path,
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory) {
+        // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-
+        // Calculating the exact AVAX input value
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
-        require(msg.value >= volume, "Not enough balance!");
+        require(
+            msg.value >= volume,
+            "[swapAVAXForExactTokens] Not enough msg.value!"
+        );
 
+        //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
+        // Refunding the over-value
         if (msg.value > volume)
             payable(msg.sender).transfer(msg.value - volume);
+        // Interacting with the router contract and returning the in-out values
         return
             routerContract.swapAVAXForExactTokens{value: volume}(
                 amountOut,
@@ -286,6 +338,12 @@ contract TradeFarmingAVAX is Ownable {
             );
     }
 
+    /**
+     * @notice Swaps the specified amount of tokens for some AVAX by connecting to the DEX Router and records the trade volumes
+     * @dev The token in the pair need to be approved to the contract by the users
+     * @dev @param @return Takes and returns the same parameters and values with router functions. 
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexacttokensforAVAX
+     */
     function swapExactTokensForAVAX(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -293,25 +351,28 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory) {
+        // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountIn,
-            "Not enough allowance!"
+            "[swapExactTokensForAVAX] Not enough pair token allowance from msg.sender to contract!"
         );
         require(
             tokenContract.transferFrom(msg.sender, address(this), amountIn),
-            "Unsuccesful token transfer!"
+            "[swapExactTokensForAVAX] Unsuccesful token transfer from msg.sender to contract!"
         );
 
+        // Approve the pair token to the router if the allowance is not enough
         if (
             tokenContract.allowance(address(this), address(routerContract)) <
             amountIn
         ) tokenContract.approve(address(routerContract), MAX_UINT);
 
+        //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
+        // Interacting with the router contract and returning the in-out values
         return
             routerContract.swapExactTokensForAVAX(
                 amountIn,
@@ -322,6 +383,13 @@ contract TradeFarmingAVAX is Ownable {
             );
     }
 
+    /**
+     * @notice Swaps some amount of tokens for specified amounts of AVAX by connecting to the DEX Router
+               and records the trade volumes
+     * @dev The token in the pair need to be approved to the contract by the users
+     * @dev @param @return Takes and returns the same parameters and values with router functions. 
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swaptokensforexactAVAX
+     */
     function swapTokensForExactAVAX(
         uint256 amountOut,
         uint256 amountInMax,
@@ -329,27 +397,30 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory out) {
+        // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
-            "Not enough allowance!"
+            "[swapTokensForExactAVAX] Not enough pair token allowance from msg.sender to contract!"
         );
-
         require(
             tokenContract.transferFrom(
                 msg.sender,
                 address(this),
                 routerContract.getAmountsIn(amountOut, path)[0]
-            )
+            ),
+            "[swapTokensForExactAVAX] Unsuccesful pair token transfer from msg.sender to contract!"
         );
 
+        // Approve the pair token to the router if the allowance is not enough
         if (
             tokenContract.allowance(address(this), address(routerContract)) <
             amountInMax
         ) tokenContract.approve(address(routerContract), MAX_UINT);
 
+        // Interacting with the router contract and returning the in-out values
         out = routerContract.swapTokensForExactAVAX(
             amountOut,
             amountInMax,
@@ -357,28 +428,99 @@ contract TradeFarmingAVAX is Ownable {
             to,
             deadline
         );
+        //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
     }
 
-    function getAmountsOut(uint256 amountIn, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts)
-    {
-        return routerContract.getAmountsOut(amountIn, path);
+    /////////// Get Public Data ///////////
+
+    /**
+     * @notice Get the current day of the competition
+     * @return uint256 - current day of the competition
+     */
+    function calcDay() public view returns (uint256) {
+        return (block.timestamp - deployTime) / 1 days;
     }
 
-    function getAmountsIn(uint256 amountOut, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts)
-    {
-        return routerContract.getAmountsIn(amountOut, path);
+    /////////// Volume Calculation Functions ///////////
+
+    /**
+     * @notice Records the trade volumes if the competition is not finished. 
+     * @notice If there are untraded or uncalculated days until the current days, calculate these days
+     * @param volume uint256 - the volume of the trade
+     */
+    function tradeRecorder(uint256 volume) private {
+        // Record the volume if the competition is not finished
+        if (calcDay() < totalDays) {
+            volumeRecords[msg.sender][calcDay()] += volume;
+            dailyVolumes[calcDay()] += volume;
+        }
+
+        // Calculate the untraded or uncalculated days until the current day
+        if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
+            addNextDaysToAverage();
+        }
     }
 
     /**
-        @dev Remco Bloemen's muldiv function https://2π.com/21/muldiv/
-    */
+     * @notice Calculates the average volume change of the specified day from the previous days
+     * @param day uin256 - day to calculate the average volume change
+     * @return uint256 - average volume change of the specified day over PRECISION
+     * @dev Returns PRECISION +- (changed value)
+     */
+    function calculateDayVolumeChange(uint256 day)
+        private
+        view
+        returns (uint256)
+    {
+        return muldiv(dailyVolumes[day], PRECISION, previousVolumes[day]);
+    }
+
+    /**
+     * @notice Calculates the rewards for the untraded or uncalculated days until the current day
+     */
+    function addNextDaysToAverage() private {
+        uint256 _cd = calcDay();
+        // Previous day count of the calculating day
+        uint256 _pd = previousDay + lastAddedDay + 1;
+        require(lastAddedDay + 1 <= _cd, "[addNextDaysToAverage] Not ready to operate!");
+        // Recording the average of previous days and [0, _cd)
+        previousVolumes[lastAddedDay + 1] =
+            muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +
+            dailyVolumes[lastAddedDay] /
+            _pd;
+
+        uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
+        // Limiting the volume change between 90% - 110%
+        if (volumeChange > UP_VOLUME_CHANGE_LIMIT) {
+            volumeChange = UP_VOLUME_CHANGE_LIMIT;
+        } else if (volumeChange < DOWN_VOLUME_CHANGE_LIMIT) {
+            volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
+        }
+
+        // Calculating the daily rewards to be distributed
+        dailyRewards[lastAddedDay] = muldiv(
+            (totalRewardBalance / (totalDays - lastAddedDay)),
+            volumeChange,
+            PRECISION
+        );
+        totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
+
+        // Moving up the calculated days
+        lastAddedDay += 1;
+
+        // Continue to calculating if still there are uncalculated or untraded days
+        if (lastAddedDay + 1 <= _cd && lastAddedDay != totalDays)
+            addNextDaysToAverage();
+    }
+
+    /**
+     * @notice Used in the functions which have the risks of overflow on a * b / c situation
+     * @notice Kindly thanks to Remco Bloemen for this muldiv function
+     * @dev See the function details at: https://2π.com/21/muldiv/
+     * @param a, @param b uint256 - the multipliying values
+     * @param denominator uint256 - the divisor value
+     */
     function muldiv(
         uint256 a,
         uint256 b,
@@ -437,6 +579,3 @@ contract TradeFarmingAVAX is Ownable {
         return result;
     }
 }
-
-//TODO: Make prettier looked
-//https://docs.soliditylang.org/en/v0.8.7/style-guide.html

@@ -8,4 +8,8 @@ typechain
 cache
 artifacts
 
+#Remix files
+.deps
+
+#Private Info
 keys

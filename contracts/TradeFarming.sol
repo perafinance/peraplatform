@@ -53,8 +53,8 @@ contract TradeFarming is Ownable {
     // Precision of reward calculations
     uint256 constant PRECISION = 1_000_000_000;
     // Limiting the daily volume changes between 90% - 110%
-    uint256 constant UP_VOLUME_CHANGE_LIMIT = PRECISION * 110 / 100;
-    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = PRECISION * 90 / 100;
+    uint256 constant UP_VOLUME_CHANGE_LIMIT = (PRECISION * 110) / 100;
+    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * 90) / 100;
 
     /**
      * @notice Constructor function - takes the parameters of the competition
@@ -444,7 +444,7 @@ contract TradeFarming is Ownable {
     /////////// Volume Calculation Functions ///////////
 
     /**
-     * @notice Records the trade volumes if the competition is not finished. 
+     * @notice Records the trade volumes if the competition is not finished.
      * @notice If there are untraded or uncalculated days until the current days, calculate these days
      * @param volume uint256 - the volume of the trade
      */
@@ -482,7 +482,10 @@ contract TradeFarming is Ownable {
         uint256 _cd = calcDay();
         // Previous day count of the calculating day
         uint256 _pd = previousDay + lastAddedDay + 1;
-        require(lastAddedDay + 1 <= _cd, "[addNextDaysToAverage] Not ready to operate!");
+        require(
+            lastAddedDay + 1 <= _cd,
+            "[addNextDaysToAverage] Not ready to operate!"
+        );
         // Recording the average of previous days and [0, _cd)
         previousVolumes[lastAddedDay + 1] =
             muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +

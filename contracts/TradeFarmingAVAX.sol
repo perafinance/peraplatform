@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 /// @dev Integradted version for Avalanche - Pangolin Pools
-contract TradeFarming is Ownable {
+contract TradeFarmingAVAX is Ownable {
     // DEX router interface
     IPangolinRouter routerContract;
     // Token of pair interface
@@ -54,8 +54,8 @@ contract TradeFarming is Ownable {
     // Precision of reward calculations
     uint256 constant PRECISION = 1_000_000_000;
     // Limiting the daily volume changes between 90% - 110%
-    uint256 constant UP_VOLUME_CHANGE_LIMIT = PRECISION * 110 / 100;
-    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = PRECISION * 90 / 100;
+    uint256 constant UP_VOLUME_CHANGE_LIMIT = (PRECISION * 110) / 100;
+    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * 90) / 100;
 
     /**
      * @notice Constructor function - takes the parameters of the competition
@@ -285,7 +285,10 @@ contract TradeFarming is Ownable {
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(msg.value > 0, "[swapExactAVAXForTokens] Not enough msg.value!");
+        require(
+            msg.value > 0,
+            "[swapExactAVAXForTokens] Not enough msg.value!"
+        );
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
@@ -439,13 +442,13 @@ contract TradeFarming is Ownable {
      * @return uint256 - current day of the competition
      */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 1 days;
+        return (block.timestamp - deployTime) / 8 hours;
     }
 
     /////////// Volume Calculation Functions ///////////
 
     /**
-     * @notice Records the trade volumes if the competition is not finished. 
+     * @notice Records the trade volumes if the competition is not finished.
      * @notice If there are untraded or uncalculated days until the current days, calculate these days
      * @param volume uint256 - the volume of the trade
      */
@@ -483,7 +486,10 @@ contract TradeFarming is Ownable {
         uint256 _cd = calcDay();
         // Previous day count of the calculating day
         uint256 _pd = previousDay + lastAddedDay + 1;
-        require(lastAddedDay + 1 <= _cd, "[addNextDaysToAverage] Not ready to operate!");
+        require(
+            lastAddedDay + 1 <= _cd,
+            "[addNextDaysToAverage] Not ready to operate!"
+        );
         // Recording the average of previous days and [0, _cd)
         previousVolumes[lastAddedDay + 1] =
             muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +

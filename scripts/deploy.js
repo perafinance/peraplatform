@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const tokenTF = require("../artifacts/contracts/interfaces/IERC20.sol/IERC20.json");
+const tokenTF = require("../artifacts/contracts/FakeUSDCoin.sol/USDCoin.json");
 const provider = ethers.provider;
 
 const ROUTER_ADDRESS = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921";
@@ -31,8 +31,11 @@ async function main() {
   let tx0 = await token.connect(deployer).approve(tf.address, ethers.constants.MaxUint256, {nonce: getNonce()});
   await tx0.wait();
 
-  let tx1 = await tf.connect(deployer).depositRewardTokens(PREVIOUS_VOLUME, {nonce: getNonce()});
+  let tx1 = await token.connect(deployer).mint(deployer.address, PREVIOUS_VOLUME, {nonce: getNonce()});
   await tx1.wait();
+
+  let tx2 = await tf.connect(deployer).depositRewardTokens(PREVIOUS_VOLUME, {nonce: getNonce()});
+  await tx2.wait();
 }
 
 main()

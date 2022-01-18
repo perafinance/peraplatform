@@ -19,6 +19,10 @@ module.exports = {
     fuji: {
       url: `https://api.avax-test.network/ext/bc/C/rpc`,
       accounts: [`${PRIVATE_KEY}`]
+    },
+    mainnet: {
+      url: `https://api.avax.network/ext/bc/C/rpc`,
+      accounts: [`${PRIVATE_KEY}`]
     }
   }
 };

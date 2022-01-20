@@ -104,17 +104,17 @@ describe("Trade Farming Test", function () {
 
             total_volumes += Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathEnT);
             await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[0] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(owner.address))));
             daily_records[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(owner.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathEnT);
             await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther(volumes[1]), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[1] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address))));
             daily_records[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathEnT);
             await tradeFarming.connect(addr2).swapETHForExactTokens(ethers.utils.parseEther(volumes[2]), pathEnT, addr2.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[2] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr2.address))));
             daily_records[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr2.address, currentDay))));
@@ -141,17 +141,17 @@ describe("Trade Farming Test", function () {
 
             total_volumes += Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathEnT);
             await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[0] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(owner.address))));
             daily_records[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(owner.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathEnT);
             await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther(volumes[1]), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[1] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address))));
             daily_records[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathEnT);
             await tradeFarming.connect(addr2).swapETHForExactTokens(ethers.utils.parseEther(volumes[2]), pathEnT, addr2.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[2] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr2.address))));
             daily_records[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr2.address, currentDay))));
@@ -198,17 +198,17 @@ describe("Trade Farming Test", function () {
 
             total_volumes += Number(volumes[0]) + Number(volumes[1]) + Number(volumes[2]);
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathEnT);
             await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[0] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(owner.address))));
             daily_records[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(owner.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[1]), pathEnT);
             await tradeFarming.connect(addr1).swapETHForExactTokens(ethers.utils.parseEther(volumes[1]), pathEnT, addr1.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[1] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr1.address))));
             daily_records[1] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr1.address, currentDay))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[2]), pathEnT);
             await tradeFarming.connect(addr2).swapETHForExactTokens(ethers.utils.parseEther(volumes[2]), pathEnT, addr2.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[2] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(addr2.address))));
             daily_records[2] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(addr2.address, currentDay))));
@@ -265,7 +265,7 @@ describe("Trade Farming Test", function () {
             await tradeFarming.connect(owner).claimAllRewards();   
             new_reward_balances[0] = Math.ceil(Number(ethers.utils.formatEther(await rewardToken.balanceOf(owner.address))));
 
-            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathTnE);
+            amountsIn = await tradeFarming.getAmountsIn(ethers.utils.parseEther(volumes[0]), pathEnT);
             await tradeFarming.connect(owner).swapETHForExactTokens(ethers.utils.parseEther(volumes[0]), pathEnT, owner.address, bTimestamp * 2, { value: amountsIn[1] });
             balances[0] = Math.ceil(Number(ethers.utils.formatEther(await TFToken.balanceOf(owner.address))));
             daily_records[0] = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.volumeRecords(owner.address, currentDay))));

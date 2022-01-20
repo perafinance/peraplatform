@@ -500,8 +500,8 @@ contract TradeFarming is Ownable {
             volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
         }
 
-        // Calculating the daily rewards to be distributed - set to the remaining balance for the last day
-        if (lastAddedDay == totalDays - 1) {
+        // Calculating the daily rewards to be distributed - set to the remaining balance if there are an overflow for the last day
+        if (lastAddedDay == totalDays - 1 && volumeChange > PRECISION) {
             dailyRewards[lastAddedDay] = totalRewardBalance;
         } else {
             dailyRewards[lastAddedDay] = muldiv(

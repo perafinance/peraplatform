@@ -504,12 +504,16 @@ contract TradeFarmingAVAX is Ownable {
             volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
         }
 
-        // Calculating the daily rewards to be distributed
-        dailyRewards[lastAddedDay] = muldiv(
-            (totalRewardBalance / (totalDays - lastAddedDay)),
-            volumeChange,
-            PRECISION
-        );
+        // Calculating the daily rewards to be distributed - set to the remaining balance for the last day
+        if (lastAddedDay == totalDays - 1) {
+            dailyRewards[lastAddedDay] = totalRewardBalance;
+        } else {
+            dailyRewards[lastAddedDay] = muldiv(
+                (totalRewardBalance / (totalDays - lastAddedDay)),
+                volumeChange,
+                PRECISION
+            );
+        }
         totalRewardBalance = totalRewardBalance - dailyRewards[lastAddedDay];
 
         // Moving up the calculated days

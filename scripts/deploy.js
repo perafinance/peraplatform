@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const tokenTF = require("../artifacts/contracts/FakeUSDCoin.sol/USDCoin.json");
+const tokenTF = require("../artifacts/contracts/MockUSDCoin.sol/USDCoin.json");
 const provider = ethers.provider;
 
 const ROUTER_ADDRESS = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921";

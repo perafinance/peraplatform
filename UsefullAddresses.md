@@ -10,7 +10,7 @@
 
 ## For Avalanche Fuji Testnet
 
-### Fake USDC.e Contract Address
+### Mock USDC.e Contract Address
 ```0x2292b53701C119bB7ee2437214dB5E101B7B780c```
 ```https://testnet.snowtrace.io/token/0x2292b53701c119bb7ee2437214db5e101b7b780c```
 

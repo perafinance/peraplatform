@@ -13,7 +13,8 @@ contract TradeFarmingFactory is Ownable {
         address _rewardAddress,
         uint256 _previousVolume,
         uint256 _previousDay,
-        uint256 _totalDays
+        uint256 _totalDays,
+        address _owner
     ) external onlyOwner {
         TradeFarming TFcontract;
         TFcontract = new TradeFarming(

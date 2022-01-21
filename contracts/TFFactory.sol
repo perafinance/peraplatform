@@ -5,8 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./TradeFarming.sol";
 
 contract TradeFarmingFactory is Ownable {
-
-    address public createdContract;
+    address[] public createdContracts;
 
     function createTnAPair(
         address _routerAddress,
@@ -15,7 +14,7 @@ contract TradeFarmingFactory is Ownable {
         uint256 _previousVolume,
         uint256 _previousDay,
         uint256 _totalDays
-    ) public onlyOwner {
+    ) external onlyOwner {
         TradeFarming TFcontract;
         TFcontract = new TradeFarming(
             _routerAddress,
@@ -26,6 +25,10 @@ contract TradeFarmingFactory is Ownable {
             _totalDays
         );
         TFcontract.transferOwnership(msg.sender);
-        createdContract = address(TFcontract);
+        createdContracts.push(address(TFcontract));
+    }
+
+    function getLastContract() external view returns (address) {
+        return createdContracts[createdContracts.length - 1];
     }
 }

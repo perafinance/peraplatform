@@ -57,7 +57,7 @@ describe("Trade Farming Test", function () {
 		factory = await TFFactory.deploy();
 
 		await factory.createTnAPair(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, rewardToken.address, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS);
-		tradeFarmingAddress = await factory.createdContract();
+        tradeFarmingAddress = await factory.getLastContract();
 		tradeFarming = new ethers.Contract(tradeFarmingAddress, TF.abi, provider);
 
 		pathTnE = [TF_TOKEN_ADDRESS, WETH_ADDRESS];

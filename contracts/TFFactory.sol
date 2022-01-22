@@ -11,6 +11,13 @@ contract TradeFarmingFactory is Ownable {
     // The addresses of deployed trade farming contracts
     address[] public createdContracts;
 
+    /** 
+    * @notice The event will be emitted when new contracts are created
+    * @param _addressOfTF address - address of the TF contract
+    * @param _tokenAddress address - address of the pairs token
+    * @param _totalDays uint256 - total days of the competition
+    */
+    event TFCreated(address _addressOfTF, address _tokenAddress, uint256 _totalDays);
 
     /**
      * @notice Factory function - takes the parameters of the competition of Token - Avax pairs
@@ -45,6 +52,8 @@ contract TradeFarmingFactory is Ownable {
         TFcontract.transferOwnership(_owner);
         // Storing the address of the contract
         createdContracts.push(address(TFcontract));
+        // Emitting the new contract event
+        emit TFCreated(address(TFcontract), _tokenAddress, _totalDays);
     }
 
     /**

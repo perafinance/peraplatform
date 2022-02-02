@@ -47,6 +47,8 @@ contract TradeFarming is Ownable {
     uint256 private lastAddedDay = 0;
     // Deploying time of the competition
     uint256 private immutable deployTime;
+    // Address of WETH token
+    address private WETH;
 
     // Max Uint Constant
     uint256 constant MAX_UINT = 2**256 - 1;
@@ -83,6 +85,7 @@ contract TradeFarming is Ownable {
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
         totalDays = _totalDays;
+        WETH = routerContract.WETH();
     }
 
     /////////// Contract Management Functions ///////////
@@ -280,11 +283,16 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory out) {
+        // Checking the pairs path
+        require(path[0] == WETH, "[swapExactETHForTokens] Invalid path!");
+        require(path[path.length - 1] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        // Checking exact swapping value
+        require(msg.value > 0, "[swapExactETHForTokens] Not a msg.value!");
+
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(msg.value > 0, "[swapExactETHForTokens] Not enough msg.value!");
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactETHForTokens{value: msg.value}(
@@ -311,16 +319,21 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory) {
-        // Add the current day if not exists on the traded days set
-        if (
-            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        // Checking the pairs path
+        require(path[0] == WETH, "[swapExactETHForTokens] Invalid path!");
+        require(path[path.length - 1] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        
         // Calculating the exact ETH input value
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(
             msg.value >= volume,
             "[swapETHForExactTokens] Not enough msg.value!"
         );
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
@@ -350,14 +363,19 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory) {
-        // Add the current day if not exists on the traded days set
-        if (
-            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        // Checking the pairs path
+        require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
+        require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        // Checking the pair token allowance
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountIn,
             "[swapExactTokensForETH] Not enough pair token allowance from msg.sender to contract!"
         );
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
         require(
             tokenContract.transferFrom(msg.sender, address(this), amountIn),
             "[swapExactTokensForETH] Unsuccesful token transfer from msg.sender to contract!"
@@ -396,14 +414,19 @@ contract TradeFarming is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory out) {
-        // Add the current day if not exists on the traded days set
-        if (
-            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        // Checking the pairs path
+        require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
+        require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        // Checking the pair token allowance
         require(
             tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
             "[swapTokensForExactETH] Not enough pair token allowance from msg.sender to contract!"
         );
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
         require(
             tokenContract.transferFrom(
                 msg.sender,

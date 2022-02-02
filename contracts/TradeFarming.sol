@@ -96,14 +96,6 @@ contract TradeFarming is Ownable {
      * @param amount uint256 - amount of the reward token to be added
      */
     function depositRewardTokens(uint256 amount) external onlyOwner {
-        require(
-            rewardToken.balanceOf(msg.sender) >= amount,
-            "[depositRewardTokens] Not enough balance!"
-        );
-        require(
-            rewardToken.allowance(msg.sender, address(this)) >= amount,
-            "[depositRewardTokens] Not enough allowance!"
-        );
         totalRewardBalance += amount;
         require(
             rewardToken.transferFrom(msg.sender, address(this), amount),
@@ -366,11 +358,6 @@ contract TradeFarming is Ownable {
         // Checking the pairs path
         require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
         require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
-        // Checking the pair token allowance
-        require(
-            tokenContract.allowance(msg.sender, address(this)) >= amountIn,
-            "[swapExactTokensForETH] Not enough pair token allowance from msg.sender to contract!"
-        );
 
         // Add the current day if not exists on the traded days set
         if (
@@ -417,11 +404,6 @@ contract TradeFarming is Ownable {
         // Checking the pairs path
         require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
         require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
-        // Checking the pair token allowance
-        require(
-            tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
-            "[swapTokensForExactETH] Not enough pair token allowance from msg.sender to contract!"
-        );
 
         // Add the current day if not exists on the traded days set
         if (
@@ -505,10 +487,7 @@ contract TradeFarming is Ownable {
         uint256 _cd = calcDay();
         // Previous day count of the calculating day
         uint256 _pd = previousDay + lastAddedDay + 1;
-        require(
-            lastAddedDay + 1 <= _cd,
-            "[addNextDaysToAverage] Not ready to operate!"
-        );
+        assert(lastAddedDay + 1 <= _cd);
         // Recording the average of previous days and [0, _cd)
         previousVolumes[lastAddedDay + 1] =
             muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +

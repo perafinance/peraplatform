@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 /// @dev Integradted version for Avalanche - Pangolin Pools
-contract TradeFarmingAVAX is Ownable {
+contract TradeFarming is Ownable {
     // DEX router interface
     IPangolinRouter routerContract;
     // Token of pair interface
@@ -48,6 +48,8 @@ contract TradeFarmingAVAX is Ownable {
     uint256 private lastAddedDay = 0;
     // Deploying time of the competition
     uint256 private immutable deployTime;
+    // Address of WAVAX token
+    address private WAVAX;
 
     // Max Uint Constant
     uint256 constant MAX_UINT = 2**256 - 1;
@@ -60,7 +62,7 @@ contract TradeFarmingAVAX is Ownable {
     /**
      * @notice Constructor function - takes the parameters of the competition
      * @dev May need to be configurated for different chains
-     * @param _routerAddress IPangolinRouter01 - address of the DEX router contract
+     * @param _routerAddress IPangolinRouter - address of the DEX router contract
      * @param _tokenAddress IERC20 - address of the token of the pair
      * @param _rewardAddress IERC20 - address of the reward token
      * @param _previousVolume uint256 - average of previous days
@@ -84,6 +86,7 @@ contract TradeFarmingAVAX is Ownable {
         tokenContract.approve(address(routerContract), MAX_UINT);
         rewardToken.approve(owner(), MAX_UINT);
         totalDays = _totalDays;
+        WAVAX = routerContract.WAVAX();
     }
 
     /////////// Contract Management Functions ///////////
@@ -94,14 +97,6 @@ contract TradeFarmingAVAX is Ownable {
      * @param amount uint256 - amount of the reward token to be added
      */
     function depositRewardTokens(uint256 amount) external onlyOwner {
-        require(
-            rewardToken.balanceOf(msg.sender) >= amount,
-            "[depositRewardTokens] Not enough balance!"
-        );
-        require(
-            rewardToken.allowance(msg.sender, address(this)) >= amount,
-            "[depositRewardTokens] Not enough allowance!"
-        );
         totalRewardBalance += amount;
         require(
             rewardToken.transferFrom(msg.sender, address(this), amount),
@@ -281,14 +276,16 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory out) {
+        // Checking the pairs path
+        require(path[0] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
+        require(path[path.length - 1] == address(tokenContract), "[swapExactAVAXForTokens] Invalid path!");
+        // Checking exact swapping value
+        require(msg.value > 0, "[swapExactAVAXForTokens] Not a msg.value!");
+
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            msg.value > 0,
-            "[swapExactAVAXForTokens] Not enough msg.value!"
-        );
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
@@ -315,16 +312,21 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external payable returns (uint256[] memory) {
-        // Add the current day if not exists on the traded days set
-        if (
-            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        // Checking the pairs path
+        require(path[0] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
+        require(path[path.length - 1] == address(tokenContract), "[swapExactAVAXForTokens] Invalid path!");
+        
         // Calculating the exact AVAX input value
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(
             msg.value >= volume,
             "[swapAVAXForExactTokens] Not enough msg.value!"
         );
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        ) tradedDays[msg.sender].add(calcDay());
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
@@ -354,14 +356,14 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory) {
+        // Checking the pairs path
+        require(path[path.length - 1] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
+        require(path[0] == address(tokenContract), "[swapExactAVAXForTokens] Invalid path!");
+
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.allowance(msg.sender, address(this)) >= amountIn,
-            "[swapExactTokensForAVAX] Not enough pair token allowance from msg.sender to contract!"
-        );
         require(
             tokenContract.transferFrom(msg.sender, address(this), amountIn),
             "[swapExactTokensForAVAX] Unsuccesful token transfer from msg.sender to contract!"
@@ -400,14 +402,14 @@ contract TradeFarmingAVAX is Ownable {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory out) {
+        // Checking the pairs path
+        require(path[path.length - 1] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
+        require(path[0] == address(tokenContract), "[swapExactAVAXForTokens] Invalid path!");
+
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.allowance(msg.sender, address(this)) >= amountInMax,
-            "[swapTokensForExactAVAX] Not enough pair token allowance from msg.sender to contract!"
-        );
         require(
             tokenContract.transferFrom(
                 msg.sender,
@@ -442,7 +444,7 @@ contract TradeFarmingAVAX is Ownable {
      * @return uint256 - current day of the competition
      */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 10 minutes;
+        return (block.timestamp - deployTime) / 1 days;
     }
 
     /////////// Volume Calculation Functions ///////////
@@ -486,10 +488,7 @@ contract TradeFarmingAVAX is Ownable {
         uint256 _cd = calcDay();
         // Previous day count of the calculating day
         uint256 _pd = previousDay + lastAddedDay + 1;
-        require(
-            lastAddedDay + 1 <= _cd,
-            "[addNextDaysToAverage] Not ready to operate!"
-        );
+        assert(lastAddedDay + 1 <= _cd);
         // Recording the average of previous days and [0, _cd)
         previousVolumes[lastAddedDay + 1] =
             muldiv(previousVolumes[lastAddedDay], (_pd - 1), _pd) +

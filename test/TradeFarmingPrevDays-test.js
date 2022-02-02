@@ -124,6 +124,8 @@ describe("Trade Farming Test", function () {
 			await increaseHours(48);
 			currentDay = Number(await tradeFarming.calcDay());
 			expect(currentDay).to.be.equal(4);
+            let dailyReward = Number(ethers.utils.formatEther(await tradeFarming.connect(owner).dailyRewards(currentDay)));
+			expect(dailyReward).to.be.equal(0);
 
 			let amountsIn;
 			let volume = "1500";

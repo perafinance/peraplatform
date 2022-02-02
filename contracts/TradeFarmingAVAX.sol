@@ -499,6 +499,8 @@ contract TradeFarming is Ownable {
         // Limiting the volume change between 90% - 110%
         if (volumeChange > UP_VOLUME_CHANGE_LIMIT) {
             volumeChange = UP_VOLUME_CHANGE_LIMIT;
+        } else if(volumeChange == 0) {
+            volumeChange = 0;
         } else if (volumeChange < DOWN_VOLUME_CHANGE_LIMIT) {
             volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
         }

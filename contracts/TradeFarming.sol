@@ -10,6 +10,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 contract TradeFarming is Ownable {
+
+    /////////// Interfaces & Libraries ///////////
+
     // DEX router interface
     IUniswapV2Router01 routerContract;
     // Token of pair interface
@@ -19,6 +22,8 @@ contract TradeFarming is Ownable {
 
     // Using OpenZeppelin's EnumerableSet Util
     using EnumerableSet for EnumerableSet.UintSet;
+
+    /////////// Type Declarations ///////////
 
     // Track of days' previous volume average
     /// @dev It's the average of previous days and [0, specified day)
@@ -35,6 +40,8 @@ contract TradeFarming is Ownable {
     // Users unclaimed traded days
     // address user -> uint256[] days
     mapping(address => EnumerableSet.UintSet) private tradedDays;
+
+    /////////// State Variables ///////////
 
     // Undistributed total rewards
     uint256 public totalRewardBalance = 0;
@@ -57,6 +64,13 @@ contract TradeFarming is Ownable {
     // Limiting the daily volume changes between 90% - 110%
     uint256 constant UP_VOLUME_CHANGE_LIMIT = (PRECISION * 110) / 100;
     uint256 constant DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * 90) / 100;
+
+    /////////// Events ///////////
+
+    // The event will be emitted when a user claims reward
+    event RewardClaimed(address _user, uint256 _amount);
+
+    /////////// Functions ///////////
 
     /**
      * @notice Constructor function - takes the parameters of the competition
@@ -174,6 +188,9 @@ contract TradeFarming is Ownable {
             rewardToken.transfer(msg.sender, totalRewardOfUser),
             "[claimAllRewards] Unsuccessful reward transfer!"
         );
+
+        // User claimed rewards
+        emit RewardClaimed(msg.sender, totalRewardOfUser);
     }
 
     /**
@@ -277,7 +294,10 @@ contract TradeFarming is Ownable {
     ) external payable returns (uint256[] memory out) {
         // Checking the pairs path
         require(path[0] == WETH, "[swapExactETHForTokens] Invalid path!");
-        require(path[path.length - 1] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        require(
+            path[path.length - 1] == address(tokenContract),
+            "[swapExactETHForTokens] Invalid path!"
+        );
         // Checking exact swapping value
         require(msg.value > 0, "[swapExactETHForTokens] Not a msg.value!");
 
@@ -313,8 +333,11 @@ contract TradeFarming is Ownable {
     ) external payable returns (uint256[] memory) {
         // Checking the pairs path
         require(path[0] == WETH, "[swapExactETHForTokens] Invalid path!");
-        require(path[path.length - 1] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
-        
+        require(
+            path[path.length - 1] == address(tokenContract),
+            "[swapExactETHForTokens] Invalid path!"
+        );
+
         // Calculating the exact ETH input value
         uint256 volume = routerContract.getAmountsIn(amountOut, path)[0];
         require(
@@ -356,8 +379,14 @@ contract TradeFarming is Ownable {
         uint256 deadline
     ) external returns (uint256[] memory) {
         // Checking the pairs path
-        require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
-        require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        require(
+            path[path.length - 1] == WETH,
+            "[swapExactETHForTokens] Invalid path!"
+        );
+        require(
+            path[0] == address(tokenContract),
+            "[swapExactETHForTokens] Invalid path!"
+        );
 
         // Add the current day if not exists on the traded days set
         if (
@@ -402,8 +431,14 @@ contract TradeFarming is Ownable {
         uint256 deadline
     ) external returns (uint256[] memory out) {
         // Checking the pairs path
-        require(path[path.length - 1] == WETH, "[swapExactETHForTokens] Invalid path!");
-        require(path[0] == address(tokenContract), "[swapExactETHForTokens] Invalid path!");
+        require(
+            path[path.length - 1] == WETH,
+            "[swapExactETHForTokens] Invalid path!"
+        );
+        require(
+            path[0] == address(tokenContract),
+            "[swapExactETHForTokens] Invalid path!"
+        );
 
         // Add the current day if not exists on the traded days set
         if (
@@ -498,7 +533,7 @@ contract TradeFarming is Ownable {
         // Limiting the volume change between 90% - 110%
         if (volumeChange > UP_VOLUME_CHANGE_LIMIT) {
             volumeChange = UP_VOLUME_CHANGE_LIMIT;
-        } else if(volumeChange == 0) {
+        } else if (volumeChange == 0) {
             volumeChange = 0;
         } else if (volumeChange < DOWN_VOLUME_CHANGE_LIMIT) {
             volumeChange = DOWN_VOLUME_CHANGE_LIMIT;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "./interfaces/IPangolinRouter.sol";
-import "./interfaces/ITradeFarming.sol";
+import "./interfaces/ITradeFarmingAVAX.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,8 +11,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 /// @dev Integradted version for Avalanche - Pangolin Pools
-contract TradeFarming is ITradeFarming, Ownable {
-
+contract TradeFarming is ITradeFarmingAVAX, Ownable {
+    
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface
@@ -143,7 +143,7 @@ contract TradeFarming is ITradeFarming, Ownable {
      * @notice Claim the calculated rewards of the previous days
      * @notice The rewards until the current day can be claimed
      */
-    function claimAllRewards() external {
+    function claimAllRewards() virtual override external {
         // Firstly calculates uncalculated days rewards if there are
         if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
@@ -284,7 +284,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external payable returns (uint256[] memory out) {
+    ) external payable virtual override returns (uint256[] memory out) {
         // Checking the pairs path
         require(path[0] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
         require(
@@ -323,7 +323,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external payable returns (uint256[] memory) {
+    ) external payable virtual override returns (uint256[] memory) {
         // Checking the pairs path
         require(path[0] == WAVAX, "[swapExactAVAXForTokens] Invalid path!");
         require(
@@ -370,7 +370,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory) {
+    ) external virtual override returns (uint256[] memory) {
         // Checking the pairs path
         require(
             path[path.length - 1] == WAVAX,
@@ -416,7 +416,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory out) {
+    ) external virtual override returns (uint256[] memory out) {
         // Checking the pairs path
         require(
             path[path.length - 1] == WAVAX,
@@ -438,7 +438,10 @@ contract TradeFarming is ITradeFarming, Ownable {
         );
 
         // Approve the pair token to the router
-        tokenContract.safeIncreaseAllowance(address(routerContract), amountInMax);
+        tokenContract.safeIncreaseAllowance(
+            address(routerContract),
+            amountInMax
+        );
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapTokensForExactAVAX(

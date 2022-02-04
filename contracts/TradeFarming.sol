@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "./interfaces/IUniswapV2Router.sol";
+import "./interfaces/ITradeFarming.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -9,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @author Ulaş Erdoğan
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
-contract TradeFarming is Ownable {
+contract TradeFarming is ITradeFarming, Ownable {
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface

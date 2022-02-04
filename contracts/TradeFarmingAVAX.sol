@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IPangolinRouter.sol";
-import "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -99,8 +99,6 @@ contract TradeFarming is Ownable {
         rewardToken = IERC20(_rewardAddress);
         previousVolumes[0] = _previousVolume;
         previousDay = _previousDay;
-        tokenContract.approve(address(routerContract), MAX_UINT);
-        rewardToken.approve(owner(), MAX_UINT);
         totalDays = _totalDays;
         WAVAX = routerContract.WAVAX();
     }
@@ -127,7 +125,7 @@ contract TradeFarming is Ownable {
             "[withdrawRewardTokens] Not enough balance!"
         );
         totalRewardBalance -= amount;
-        rewardToken.safeTransfer(msg.sender, amount);
+        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /**
@@ -278,7 +276,7 @@ contract TradeFarming is Ownable {
      * @notice Swaps the specified amount of AVAX for some tokens by connecting to the DEX Router and records the trade volumes
      * @dev Exact amount of the value has to be sended as "value"
      * @dev @param @return Takes and returns the same parameters and values with router functions. 
-                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexactAVAXfortokens
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexactethfortokens
      */
     function swapExactAVAXForTokens(
         uint256 amountOutMin,
@@ -317,7 +315,7 @@ contract TradeFarming is Ownable {
      * @dev Equal or bigger amount of value -to be protected from slippage- has to be sended as "value", 
             unused part of the value will be returned.
      * @dev @param @return Takes and returns the same parameters and values with router functions. 
-                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapAVAXforexacttokens
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapethforexacttokens
      */
     function swapAVAXForExactTokens(
         uint256 amountOut,
@@ -363,7 +361,7 @@ contract TradeFarming is Ownable {
      * @notice Swaps the specified amount of tokens for some AVAX by connecting to the DEX Router and records the trade volumes
      * @dev The token in the pair need to be approved to the contract by the users
      * @dev @param @return Takes and returns the same parameters and values with router functions. 
-                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexacttokensforAVAX
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swapexacttokensforeth
      */
     function swapExactTokensForAVAX(
         uint256 amountIn,
@@ -388,11 +386,8 @@ contract TradeFarming is Ownable {
         ) tradedDays[msg.sender].add(calcDay());
         tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
-        // Approve the pair token to the router if the allowance is not enough
-        if (
-            tokenContract.allowance(address(this), address(routerContract)) <
-            amountIn
-        ) tokenContract.approve(address(routerContract), MAX_UINT);
+        // Approve the pair token to the router
+        tokenContract.safeIncreaseAllowance(address(routerContract), amountIn);
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
@@ -412,7 +407,7 @@ contract TradeFarming is Ownable {
                and records the trade volumes
      * @dev The token in the pair need to be approved to the contract by the users
      * @dev @param @return Takes and returns the same parameters and values with router functions. 
-                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swaptokensforexactAVAX
+                           See at: https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-01#swaptokensforexacteth
      */
     function swapTokensForExactAVAX(
         uint256 amountOut,
@@ -441,11 +436,8 @@ contract TradeFarming is Ownable {
             routerContract.getAmountsIn(amountOut, path)[0]
         );
 
-        // Approve the pair token to the router if the allowance is not enough
-        if (
-            tokenContract.allowance(address(this), address(routerContract)) <
-            amountInMax
-        ) tokenContract.approve(address(routerContract), MAX_UINT);
+        // Approve the pair token to the router
+        tokenContract.safeIncreaseAllowance(address(routerContract), amountInMax);
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapTokensForExactAVAX(
@@ -457,6 +449,9 @@ contract TradeFarming is Ownable {
         );
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
+
+        // Resetting the approval amount the pair token to the router
+        tokenContract.safeApprove(address(routerContract), 0);
     }
 
     /////////// Get Public Data ///////////

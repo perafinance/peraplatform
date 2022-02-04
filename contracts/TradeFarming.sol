@@ -97,8 +97,6 @@ contract TradeFarming is Ownable {
         rewardToken = IERC20(_rewardAddress);
         previousVolumes[0] = _previousVolume;
         previousDay = _previousDay;
-        tokenContract.approve(address(routerContract), MAX_UINT);
-        rewardToken.approve(owner(), MAX_UINT);
         totalDays = _totalDays;
         WETH = routerContract.WETH();
     }
@@ -386,11 +384,8 @@ contract TradeFarming is Ownable {
         ) tradedDays[msg.sender].add(calcDay());
         tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
-        // Approve the pair token to the router if the allowance is not enough
-        if (
-            tokenContract.allowance(address(this), address(routerContract)) <
-            amountIn
-        ) tokenContract.approve(address(routerContract), MAX_UINT);
+        // Approve the pair token to the router
+        tokenContract.safeIncreaseAllowance(address(routerContract), amountIn);
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountIn);
@@ -439,11 +434,8 @@ contract TradeFarming is Ownable {
             routerContract.getAmountsIn(amountOut, path)[0]
         );
 
-        // Approve the pair token to the router if the allowance is not enough
-        if (
-            tokenContract.allowance(address(this), address(routerContract)) <
-            amountInMax
-        ) tokenContract.approve(address(routerContract), MAX_UINT);
+        // Approve the pair token to the router
+        tokenContract.safeIncreaseAllowance(address(routerContract), amountInMax);
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapTokensForExactETH(
@@ -455,6 +447,9 @@ contract TradeFarming is Ownable {
         );
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(out[0]);
+
+        // Resetting the approval amount the pair token to the router
+        tokenContract.safeApprove(address(routerContract), 0);
     }
 
     /////////// Get Public Data ///////////

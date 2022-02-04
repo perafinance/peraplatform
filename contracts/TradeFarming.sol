@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IUniswapV2Router.sol";
-import "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 contract TradeFarming is Ownable {
-
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface
@@ -22,6 +21,8 @@ contract TradeFarming is Ownable {
 
     // Using OpenZeppelin's EnumerableSet Util
     using EnumerableSet for EnumerableSet.UintSet;
+    // Using OpenZeppelin's SafeERC20 Util
+    using SafeERC20 for IERC20;
 
     /////////// Type Declarations ///////////
 
@@ -111,10 +112,7 @@ contract TradeFarming is Ownable {
      */
     function depositRewardTokens(uint256 amount) external onlyOwner {
         totalRewardBalance += amount;
-        require(
-            rewardToken.transferFrom(msg.sender, address(this), amount),
-            "[depositRewardTokens] Unsuccesful reward token transfer from Owner to contract!"
-        );
+        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /**
@@ -127,10 +125,7 @@ contract TradeFarming is Ownable {
             "[withdrawRewardTokens] Not enough balance!"
         );
         totalRewardBalance -= amount;
-        require(
-            rewardToken.transfer(msg.sender, amount),
-            "[withdrawRewardTokens] Unsuccesful reward token transfer from contract to Owner!"
-        );
+        rewardToken.safeTransfer(msg.sender, amount);
     }
 
     /**
@@ -184,10 +179,7 @@ contract TradeFarming is Ownable {
         }
 
         require(totalRewardOfUser > 0, "[claimAllRewards] No reward!");
-        require(
-            rewardToken.transfer(msg.sender, totalRewardOfUser),
-            "[claimAllRewards] Unsuccessful reward transfer!"
-        );
+        rewardToken.safeTransfer(msg.sender, totalRewardOfUser);
 
         // User claimed rewards
         emit RewardClaimed(msg.sender, totalRewardOfUser);
@@ -392,10 +384,7 @@ contract TradeFarming is Ownable {
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.transferFrom(msg.sender, address(this), amountIn),
-            "[swapExactTokensForETH] Unsuccesful token transfer from msg.sender to contract!"
-        );
+        tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router if the allowance is not enough
         if (
@@ -444,13 +433,10 @@ contract TradeFarming is Ownable {
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.transferFrom(
-                msg.sender,
-                address(this),
-                routerContract.getAmountsIn(amountOut, path)[0]
-            ),
-            "[swapTokensForExactETH] Unsuccesful pair token transfer from msg.sender to contract!"
+        tokenContract.safeTransferFrom(
+            msg.sender,
+            address(this),
+            routerContract.getAmountsIn(amountOut, path)[0]
         );
 
         // Approve the pair token to the router if the allowance is not enough

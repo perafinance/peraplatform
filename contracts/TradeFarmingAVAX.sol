@@ -23,6 +23,8 @@ contract TradeFarming is Ownable {
 
     // Using OpenZeppelin's EnumerableSet Util
     using EnumerableSet for EnumerableSet.UintSet;
+    // Using OpenZeppelin's SafeERC20 Util
+    using SafeERC20 for IERC20;
 
     /////////// Type Declarations ///////////
 
@@ -112,10 +114,7 @@ contract TradeFarming is Ownable {
      */
     function depositRewardTokens(uint256 amount) external onlyOwner {
         totalRewardBalance += amount;
-        require(
-            rewardToken.transferFrom(msg.sender, address(this), amount),
-            "[depositRewardTokens] Unsuccesful reward token transfer from Owner to contract!"
-        );
+        rewardToken.safeTransfer(msg.sender, amount);
     }
 
     /**
@@ -128,10 +127,7 @@ contract TradeFarming is Ownable {
             "[withdrawRewardTokens] Not enough balance!"
         );
         totalRewardBalance -= amount;
-        require(
-            rewardToken.transfer(msg.sender, amount),
-            "[withdrawRewardTokens] Unsuccesful reward token transfer from contract to Owner!"
-        );
+        rewardToken.safeTransfer(msg.sender, amount);
     }
 
     /**
@@ -185,10 +181,7 @@ contract TradeFarming is Ownable {
         }
 
         require(totalRewardOfUser > 0, "[claimAllRewards] No reward!");
-        require(
-            rewardToken.transfer(msg.sender, totalRewardOfUser),
-            "[claimAllRewards] Unsuccessful reward transfer!"
-        );
+        rewardToken.safeTransfer(msg.sender, totalRewardOfUser);
 
         // User claimed rewards
         emit RewardClaimed(msg.sender, totalRewardOfUser);
@@ -393,10 +386,7 @@ contract TradeFarming is Ownable {
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.transferFrom(msg.sender, address(this), amountIn),
-            "[swapExactTokensForAVAX] Unsuccesful token transfer from msg.sender to contract!"
-        );
+        tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router if the allowance is not enough
         if (
@@ -445,13 +435,10 @@ contract TradeFarming is Ownable {
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
         ) tradedDays[msg.sender].add(calcDay());
-        require(
-            tokenContract.transferFrom(
-                msg.sender,
-                address(this),
-                routerContract.getAmountsIn(amountOut, path)[0]
-            ),
-            "[swapTokensForExactAVAX] Unsuccesful pair token transfer from msg.sender to contract!"
+        tokenContract.safeTransferFrom(
+            msg.sender,
+            address(this),
+            routerContract.getAmountsIn(amountOut, path)[0]
         );
 
         // Approve the pair token to the router if the allowance is not enough

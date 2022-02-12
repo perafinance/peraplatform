@@ -113,7 +113,7 @@ contract TradeFarming is ITradeFarmingAVAX, Ownable {
      */
     function depositRewardTokens(uint256 amount) external onlyOwner {
         totalRewardBalance += amount;
-        rewardToken.safeTransfer(msg.sender, amount);
+        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /**
@@ -126,7 +126,7 @@ contract TradeFarming is ITradeFarmingAVAX, Ownable {
             "[withdrawRewardTokens] Not enough balance!"
         );
         totalRewardBalance -= amount;
-        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+        rewardToken.safeTransfer(msg.sender, amount);
     }
 
     /**

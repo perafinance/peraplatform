@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 /// @dev Integradted version for Avalanche - Pangolin Pools
-contract TradeFarming is ITradeFarmingAVAX, Ownable {
+contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     
     /////////// Interfaces & Libraries ///////////
 

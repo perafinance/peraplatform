@@ -15,6 +15,10 @@ Download the dependencies by
 <br/>
 
 ```
+npm install --save-dev hardhat
+```
+
+```
 npm install @openzeppelin/contracts
 ```
 

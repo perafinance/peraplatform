@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const TF = require("../artifacts/contracts/TradeFarming.sol/TradeFarming.json");
+const TF = require("../artifacts/contracts/trade-farming/TradeFarming.sol/TradeFarming.json");
 const tokenTF = require("../artifacts/contracts/interfaces/IERC20.sol/IERC20.json");
 
 const provider = ethers.provider;

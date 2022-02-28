@@ -471,7 +471,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
      * @return uint256 - current day of the competition
      */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / 1 days;
+        return (block.timestamp - deployTime) / (1 days / 2);
     }
 
     /////////// Volume Calculation Functions ///////////

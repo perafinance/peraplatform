@@ -4,10 +4,10 @@ const provider = ethers.provider;
 
 const ROUTER_ADDRESS = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921";
 const TF_TOKEN_ADDRESS = "0x2292b53701C119bB7ee2437214dB5E101B7B780c";
-const TOKEN_COUNT = "30000000";
+const TOKEN_COUNT = "3000000000";
 const PREVIOUS_VOLUME = ethers.utils.parseUnits(TOKEN_COUNT, 18);
-const PREVIOUS_DAYS = 2000;
-const TOTAL_DAYS = 2520;
+const PREVIOUS_DAYS = 24;
+const TOTAL_DAYS = 12;
 
 async function main() {
 
@@ -24,7 +24,7 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   let TradeFarming = await ethers.getContractFactory("TradeFarmingAVAX");
-  let tf = await TradeFarming.connect(deployer).deploy(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, TF_TOKEN_ADDRESS, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, {nonce: getNonce()});
+  let tf = await TradeFarming.connect(deployer).deploy(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, TF_TOKEN_ADDRESS, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, 110, 90, {nonce: getNonce()});
   console.log("Contract address:", tf.address);
 
   let token = new ethers.Contract(TF_TOKEN_ADDRESS, tokenTF.abi, provider);

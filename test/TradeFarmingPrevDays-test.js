@@ -56,8 +56,8 @@ describe("Trade Farming Test", function () {
 		TFFactory = await ethers.getContractFactory("TradeFarmingFactory");
 		factory = await TFFactory.deploy();
 
-		await factory.createTnAPair(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, rewardToken.address, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, owner.address);
-        tradeFarmingAddress = await factory.getLastContract();
+		await factory.createTnAPair(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, rewardToken.address, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, 110, 90, owner.address);
+		tradeFarmingAddress = await factory.getLastContract();
 		tradeFarming = new ethers.Contract(tradeFarmingAddress, TF.abi, provider);
 
 		pathTnE = [TF_TOKEN_ADDRESS, WETH_ADDRESS];
@@ -124,7 +124,7 @@ describe("Trade Farming Test", function () {
 			await increaseHours(48);
 			currentDay = Number(await tradeFarming.calcDay());
 			expect(currentDay).to.be.equal(4);
-            let dailyReward = Number(ethers.utils.formatEther(await tradeFarming.connect(owner).dailyRewards(currentDay)));
+			let dailyReward = Number(ethers.utils.formatEther(await tradeFarming.connect(owner).dailyRewards(currentDay)));
 			expect(dailyReward).to.be.equal(0);
 
 			let amountsIn;
@@ -135,11 +135,11 @@ describe("Trade Farming Test", function () {
 
 			dailyVolumes[3] = 0;
 			expect(dailyVolumes[3]).to.be.equal(Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.dailyVolumes(3)))));
-			
+
 			previousVolumes[3] = (previousVolumes[2] * (PREVIOUS_DAYS + 3 - 1) + dailyVolumes[2]) / (PREVIOUS_DAYS + 3);
 			let prev = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.previousVolumes(3))));
 			expect(prev).to.be.equal(previousVolumes[3]);
-			
+
 			previousVolumes[4] = Math.ceil((previousVolumes[3] * (PREVIOUS_DAYS + currentDay - 1) + dailyVolumes[3]) / (PREVIOUS_DAYS + currentDay));
 			prev = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.previousVolumes(4))));
 			expect(prev).to.be.equal(previousVolumes[4]);
@@ -152,11 +152,7 @@ describe("Trade Farming Test", function () {
 			await tradeFarming.connect(owner).claimAllRewards();
 			previousVolumes[5] = Math.ceil((previousVolumes[4] * (PREVIOUS_DAYS + currentDay - 1) + dailyVolumes[4]) / (PREVIOUS_DAYS + currentDay));
 			prev = Math.ceil(Number(ethers.utils.formatEther(await tradeFarming.previousVolumes(5))));
-			expect(prev+1).to.be.equal(previousVolumes[5]); // +1 because of rounding
-
-			console.log("DV", dailyVolumes);
-			console.log("PV", previousVolumes);
-
+			expect(prev + 1).to.be.equal(previousVolumes[5]); // +1 because of rounding
 		});
 	});
 });

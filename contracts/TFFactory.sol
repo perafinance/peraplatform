@@ -28,6 +28,8 @@ contract TradeFarmingFactory is Ownable {
      * @param _previousDay uint256 - previous considered days
      * @param _totalDays uint256 - total days of the competition
      * @param _owner address - the address which will be the owner
+     * @param _upLimit uint256 - setter to up volume change limit
+     * @param _downLimit uint256 - setter to down volume change limit
      */
     function createTnAPair(
         address _routerAddress,
@@ -36,6 +38,8 @@ contract TradeFarmingFactory is Ownable {
         uint256 _previousVolume,
         uint256 _previousDay,
         uint256 _totalDays,
+        uint256 _upLimit,
+        uint256 _downLimit,
         address _owner
     ) external onlyOwner {
         TradeFarming TFcontract;
@@ -46,7 +50,9 @@ contract TradeFarmingFactory is Ownable {
             _rewardAddress,
             _previousVolume,
             _previousDay,
-            _totalDays
+            _totalDays,
+            _upLimit,
+            _downLimit
         );
         // Transferring the ownership of the contract to the msg.sender
         TFcontract.transferOwnership(_owner);

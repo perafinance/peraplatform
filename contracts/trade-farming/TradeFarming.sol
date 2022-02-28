@@ -64,9 +64,9 @@ contract TradeFarming is ITradeFarming, Ownable {
     uint256 constant MAX_UINT = 2**256 - 1;
     // Precision of reward calculations
     uint256 constant PRECISION = 1_000_000_000;
-    // Limiting the daily volume changes between 90% - 110%
-    uint256 constant UP_VOLUME_CHANGE_LIMIT = (PRECISION * 110) / 100;
-    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * 90) / 100;
+    // Limiting the daily volume changes
+    uint256 immutable UP_VOLUME_CHANGE_LIMIT;
+    uint256 immutable DOWN_VOLUME_CHANGE_LIMIT;
 
     /////////// Events ///////////
 
@@ -78,12 +78,15 @@ contract TradeFarming is ITradeFarming, Ownable {
     /**
      * @notice Constructor function - takes the parameters of the competition
      * @dev May need to be configurated for different chains
+     * @dev Give parameters for up&down limits in base of 100. for exp: 110 for %10 up limit, 90 for %10 down limit
      * @param _routerAddress IUniswapV2Router01 - address of the DEX router contract
      * @param _tokenAddress IERC20 - address of the token of the pair
      * @param _rewardAddress IERC20 - address of the reward token
      * @param _previousVolume uint256 - average of previous days
      * @param _previousDay uint256 - previous considered days
      * @param _totalDays uint256 - total days of the competition
+     * @param _upLimit uint256 - setter to up volume change limit
+     * @param _downLimit uint256 - setter to down volume change limit
      */
     constructor(
         address _routerAddress,
@@ -91,7 +94,9 @@ contract TradeFarming is ITradeFarming, Ownable {
         address _rewardAddress,
         uint256 _previousVolume,
         uint256 _previousDay,
-        uint256 _totalDays
+        uint256 _totalDays,
+        uint256 _upLimit,
+        uint256 _downLimit
     ) {
         deployTime = block.timestamp;
         routerContract = IUniswapV2Router01(_routerAddress);
@@ -101,6 +106,8 @@ contract TradeFarming is ITradeFarming, Ownable {
         previousDay = _previousDay;
         totalDays = _totalDays;
         WETH = routerContract.WETH();
+        UP_VOLUME_CHANGE_LIMIT = (PRECISION * _upLimit) / 100;
+        DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * _downLimit) / 100;
     }
 
     /////////// Contract Management Functions ///////////

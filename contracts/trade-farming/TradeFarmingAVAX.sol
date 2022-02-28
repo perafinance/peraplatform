@@ -12,7 +12,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 /// @dev Integradted version for Avalanche - Pangolin Pools
 contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
-    
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface
@@ -66,8 +65,8 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     // Precision of reward calculations
     uint256 constant PRECISION = 1_000_000_000;
     // Limiting the daily volume changes between 90% - 110%
-    uint256 constant UP_VOLUME_CHANGE_LIMIT = (PRECISION * 110) / 100;
-    uint256 constant DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * 90) / 100;
+    uint256 immutable UP_VOLUME_CHANGE_LIMIT;
+    uint256 immutable DOWN_VOLUME_CHANGE_LIMIT;
 
     /////////// Events ///////////
 
@@ -79,12 +78,15 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     /**
      * @notice Constructor function - takes the parameters of the competition
      * @dev May need to be configurated for different chains
-     * @param _routerAddress IPangolinRouter - address of the DEX router contract
+     * @dev Give parameters for up&down limits in base of 100. for exp: 110 for %10 up limit, 90 for %10 down limit
+     * @param _routerAddress IUniswapV2Router01 - address of the DEX router contract
      * @param _tokenAddress IERC20 - address of the token of the pair
      * @param _rewardAddress IERC20 - address of the reward token
      * @param _previousVolume uint256 - average of previous days
      * @param _previousDay uint256 - previous considered days
      * @param _totalDays uint256 - total days of the competition
+     * @param _upLimit uint256 - setter to up volume change limit
+     * @param _downLimit uint256 - setter to down volume change limit
      */
     constructor(
         address _routerAddress,
@@ -92,7 +94,9 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         address _rewardAddress,
         uint256 _previousVolume,
         uint256 _previousDay,
-        uint256 _totalDays
+        uint256 _totalDays,
+        uint256 _upLimit,
+        uint256 _downLimit
     ) {
         deployTime = block.timestamp;
         routerContract = IPangolinRouter(_routerAddress);
@@ -102,6 +106,8 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         previousDay = _previousDay;
         totalDays = _totalDays;
         WAVAX = routerContract.WAVAX();
+        UP_VOLUME_CHANGE_LIMIT = (PRECISION * _upLimit) / 100;
+        DOWN_VOLUME_CHANGE_LIMIT = (PRECISION * _downLimit) / 100;
     }
 
     /////////// Contract Management Functions ///////////
@@ -143,7 +149,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
      * @notice Claim the calculated rewards of the previous days
      * @notice The rewards until the current day can be claimed
      */
-    function claimAllRewards() virtual override external {
+    function claimAllRewards() external virtual override {
         // Firstly calculates uncalculated days rewards if there are
         if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();

@@ -63,7 +63,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     // Max Uint Constant
     uint256 constant MAX_UINT = 2**256 - 1;
     // Precision of reward calculations
-    uint256 constant PRECISION = 1_000_000_000;
+    uint256 constant PRECISION = 1e18;
     // Limiting the daily volume changes between 90% - 110%
     uint256 immutable UP_VOLUME_CHANGE_LIMIT;
     uint256 immutable DOWN_VOLUME_CHANGE_LIMIT;

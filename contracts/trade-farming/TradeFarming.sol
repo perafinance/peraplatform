@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
 contract TradeFarming is ITradeFarming, Ownable {
-    
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface
@@ -149,7 +148,7 @@ contract TradeFarming is ITradeFarming, Ownable {
      * @notice Claim the calculated rewards of the previous days
      * @notice The rewards until the current day can be claimed
      */
-    function claimAllRewards() virtual override external {
+    function claimAllRewards() external virtual override {
         // Firstly calculates uncalculated days rewards if there are
         if (lastAddedDay + 1 <= calcDay() && lastAddedDay != totalDays) {
             addNextDaysToAverage();
@@ -240,14 +239,34 @@ contract TradeFarming is ITradeFarming, Ownable {
     {
         uint256 rewardOfUser = 0;
         uint256 rewardRate = PRECISION;
-        if (day < lastAddedDay && tradedDays[msg.sender].contains(day)) {
+
+        if (tradedDays[msg.sender].contains(day)) {
             rewardRate = muldiv(
                 volumeRecords[msg.sender][day],
                 PRECISION,
                 dailyVolumes[day]
             );
-            rewardOfUser += muldiv(rewardRate, dailyRewards[day], PRECISION);
+            uint256 dailyReward;
+            if (day < lastAddedDay) {
+                dailyReward = dailyRewards[day];
+            } else if (day == lastAddedDay) {
+                uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
+                if (volumeChange > UP_VOLUME_CHANGE_LIMIT) {
+                    volumeChange = UP_VOLUME_CHANGE_LIMIT;
+                } else if (volumeChange == 0) {
+                    volumeChange = 0;
+                } else if (volumeChange < DOWN_VOLUME_CHANGE_LIMIT) {
+                    volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
+                }
+                dailyReward = muldiv(
+                    totalRewardBalance / (totalDays - lastAddedDay),
+                    volumeChange,
+                    PRECISION
+                );
+            }
+            rewardOfUser += muldiv(rewardRate, dailyReward, PRECISION);
         }
+
         return rewardOfUser;
     }
 

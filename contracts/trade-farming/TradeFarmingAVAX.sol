@@ -240,14 +240,34 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     {
         uint256 rewardOfUser = 0;
         uint256 rewardRate = PRECISION;
-        if (day < lastAddedDay && tradedDays[msg.sender].contains(day)) {
+
+        if (tradedDays[msg.sender].contains(day)) {
             rewardRate = muldiv(
                 volumeRecords[msg.sender][day],
                 PRECISION,
                 dailyVolumes[day]
             );
-            rewardOfUser += muldiv(rewardRate, dailyRewards[day], PRECISION);
+            uint256 dailyReward;
+            if (day < lastAddedDay) {
+                dailyReward = dailyRewards[day];
+            } else if (day == lastAddedDay) {
+                uint256 volumeChange = calculateDayVolumeChange(lastAddedDay);
+                if (volumeChange > UP_VOLUME_CHANGE_LIMIT) {
+                    volumeChange = UP_VOLUME_CHANGE_LIMIT;
+                } else if (volumeChange == 0) {
+                    volumeChange = 0;
+                } else if (volumeChange < DOWN_VOLUME_CHANGE_LIMIT) {
+                    volumeChange = DOWN_VOLUME_CHANGE_LIMIT;
+                }
+                dailyReward = muldiv(
+                    totalRewardBalance / (totalDays - lastAddedDay),
+                    volumeChange,
+                    PRECISION
+                );
+            }
+            rewardOfUser += muldiv(rewardRate, dailyReward, PRECISION);
         }
+
         return rewardOfUser;
     }
 

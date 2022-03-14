@@ -49,13 +49,13 @@ contract TradeFarming is ITradeFarming, Ownable {
     uint256 public totalRewardBalance = 0;
     // Total days of the competition
     uint256 public totalDays;
+    // Deploying time of the competition
+    uint256 public immutable deployTime;
 
     // Considered previous volume of the pair
     uint256 private previousDay;
     // Last calculation time of the competition
     uint256 private lastAddedDay = 0;
-    // Deploying time of the competition
-    uint256 private immutable deployTime;
     // Address of WETH token
     address private WETH;
 

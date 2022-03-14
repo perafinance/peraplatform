@@ -6,7 +6,6 @@ typechain
 
 #Hardhat files
 cache
-artifacts
 
 #Remix files
 .deps

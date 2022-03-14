@@ -3,11 +3,13 @@ const tokenTF = require("../artifacts/contracts/MockUSDCoin.sol/USDCoin.json");
 const provider = ethers.provider;
 
 const ROUTER_ADDRESS = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921";
-const TF_TOKEN_ADDRESS = "0x2292b53701C119bB7ee2437214dB5E101B7B780c";
-const TOKEN_COUNT = "3000000000";
-const PREVIOUS_VOLUME = ethers.utils.parseUnits(TOKEN_COUNT, 18);
-const PREVIOUS_DAYS = 24;
-const TOTAL_DAYS = 12;
+const TF_TOKEN_ADDRESS = "0xa9d19d5e8712C1899C4344059FD2D873a3e2697E";
+const TOKEN_COUNTA = "20000";
+const TOKEN_COUNTB = "1";
+const PREVIOUS_VOLUME = ethers.utils.parseUnits(TOKEN_COUNTA, 18);
+const REWARDS = ethers.utils.parseUnits(TOKEN_COUNTB, 18);
+const PREVIOUS_DAYS = 15;
+const TOTAL_DAYS = 15;
 
 async function main() {
 
@@ -24,17 +26,17 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   let TradeFarming = await ethers.getContractFactory("TradeFarmingAVAX");
-  let tf = await TradeFarming.connect(deployer).deploy(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, TF_TOKEN_ADDRESS, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, 110, 90, {nonce: getNonce()});
+  let tf = await TradeFarming.connect(deployer).deploy(ROUTER_ADDRESS, TF_TOKEN_ADDRESS, TF_TOKEN_ADDRESS, PREVIOUS_VOLUME, PREVIOUS_DAYS, TOTAL_DAYS, 100, 100, {nonce: getNonce()});
   console.log("Contract address:", tf.address);
 
   let token = new ethers.Contract(TF_TOKEN_ADDRESS, tokenTF.abi, provider);
   let tx0 = await token.connect(deployer).approve(tf.address, ethers.constants.MaxUint256, {nonce: getNonce()});
   await tx0.wait();
 
-  let tx1 = await token.connect(deployer).mint(deployer.address, PREVIOUS_VOLUME, {nonce: getNonce()});
+  let tx1 = await token.connect(deployer).mint(deployer.address, REWARDS, {nonce: getNonce()});
   await tx1.wait();
 
-  let tx2 = await tf.connect(deployer).depositRewardTokens(PREVIOUS_VOLUME, {nonce: getNonce()});
+  let tx2 = await tf.connect(deployer).depositRewardTokens(REWARDS, {nonce: getNonce()});
   await tx2.wait();
 }
 

@@ -54,7 +54,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     // Considered previous volume of the pair
     uint256 private previousDay;
     // Last calculation time of the competition
-    uint256 private lastAddedDay = 0;
+    uint256 public lastAddedDay;
     // Deploying time of the competition
     uint256 public immutable deployTime;
     // Address of WAVAX token
@@ -491,7 +491,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
      * @return uint256 - current day of the competition
      */
     function calcDay() public view returns (uint256) {
-        return (block.timestamp - deployTime) / (1 days / 2);
+        return (block.timestamp - deployTime) / (5 minutes);
     }
 
     /////////// Volume Calculation Functions ///////////

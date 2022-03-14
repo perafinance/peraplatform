@@ -55,7 +55,7 @@ contract TradeFarming is ITradeFarming, Ownable {
     // Considered previous volume of the pair
     uint256 private previousDay;
     // Last calculation time of the competition
-    uint256 private lastAddedDay = 0;
+    uint256 public lastAddedDay;
     // Address of WETH token
     address private WETH;
 

@@ -56,7 +56,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     // Last calculation time of the competition
     uint256 private lastAddedDay = 0;
     // Deploying time of the competition
-    uint256 private immutable deployTime;
+    uint256 public immutable deployTime;
     // Address of WAVAX token
     address private WAVAX;
 

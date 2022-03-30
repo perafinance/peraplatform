@@ -161,6 +161,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         uint256 rewardRate = PRECISION;
 
         uint256 len = tradedDays[msg.sender].length();
+        if(tradedDays[msg.sender].contains(lastAddedDay)) len -= 1;
         // Keep the claimed days to remove from the traded days set
         uint256[] memory _removeDays = new uint256[](len);
 

@@ -60,8 +60,6 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     // Address of WAVAX token
     address private WAVAX;
 
-    // Max Uint Constant
-    uint256 constant MAX_UINT = 2**256 - 1;
     // Precision of reward calculations
     uint256 constant PRECISION = 1e18;
     // Limiting the daily volume changes between 90% - 110%
@@ -98,6 +96,11 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         uint256 _upLimit,
         uint256 _downLimit
     ) {
+        require(
+            _routerAddress != address(0) && _tokenAddress != address(0) && _rewardAddress != address(0),
+            "[] Addresses can not be 0 address."
+        );
+
         deployTime = block.timestamp;
         routerContract = IPangolinRouter(_routerAddress);
         tokenContract = IERC20(_tokenAddress);
@@ -182,7 +185,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
 
         // Remove the claimed days from the set
         for (uint256 i = 0; i < len; i++) {
-            tradedDays[msg.sender].remove(_removeDays[i]);
+            require(tradedDays[msg.sender].remove(_removeDays[i]), "[claimAllRewards] Unsuccessfull set operation");
         }
 
         require(totalRewardOfUser > 0, "[claimAllRewards] No reward!");
@@ -323,7 +326,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactAVAXForTokens] Unsuccessfull set operation");
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
@@ -367,7 +370,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapAVAXForExactTokens] Unsuccessfull set operation");
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
@@ -410,7 +413,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactTokensForAVAX] Unsuccessfull set operation");
         tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router
@@ -456,7 +459,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) tradedDays[msg.sender].add(calcDay());
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapTokensForExactAVAX] Unsuccessfull set operation");
         tokenContract.safeTransferFrom(
             msg.sender,
             address(this),

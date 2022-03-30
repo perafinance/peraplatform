@@ -9,7 +9,7 @@ const PRIVATE_KEY = private_key.key;
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.11",
+  solidity: "0.8.2",
   networks: {
     hardhat: {
       forking: {

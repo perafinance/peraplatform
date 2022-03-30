@@ -185,7 +185,7 @@ contract TradeFarming is ITradeFarming, Ownable {
 
         // Remove the claimed days from the set
         for (uint256 i = 0; i < len; i++) {
-            require(tradedDays[msg.sender].remove(_removeDays[i]), "[claimAllRewards] Unsuccessfull set operation");
+            require(tradedDays[msg.sender].remove(_removeDays[i]), "[claimAllRewards] Unsuccessful set operation");
         }
 
         require(totalRewardOfUser > 0, "[claimAllRewards] No reward!");
@@ -326,7 +326,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactETHForTokens] Unsuccessfull set operation");
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactETHForTokens] Unsuccessful set operation");
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactETHForTokens{value: msg.value}(
@@ -370,7 +370,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapETHForExactTokens] Unsuccessfull set operation");
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapETHForExactTokens] Unsuccessful set operation");
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
@@ -413,7 +413,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactTokensForETH] Unsuccessfull set operation");
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactTokensForETH] Unsuccessful set operation");
         tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router
@@ -459,7 +459,7 @@ contract TradeFarming is ITradeFarming, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapTokensForExactETH] Unsuccessfull set operation");
+        ) (tradedDays[msg.sender].add(calcDay()), "[swapTokensForExactETH] Unsuccessful set operation");
         tokenContract.safeTransferFrom(
             msg.sender,
             address(this),

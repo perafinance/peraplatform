@@ -327,7 +327,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactAVAXForTokens] Unsuccessfull set operation");
+        ) require(tradedDays[msg.sender].add(calcDay()), "[swapExactAVAXForTokens] Unsuccessfull set operation");
 
         // Interacting with the router contract and returning the in-out values
         out = routerContract.swapExactAVAXForTokens{value: msg.value}(
@@ -371,7 +371,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapAVAXForExactTokens] Unsuccessfull set operation");
+        ) require(tradedDays[msg.sender].add(calcDay()), "[swapAVAXForExactTokens] Unsuccessfull set operation");
 
         //Recording the volumes if the competition is not finished
         if (lastAddedDay != totalDays) tradeRecorder(amountOut);
@@ -414,7 +414,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapExactTokensForAVAX] Unsuccessfull set operation");
+        ) require(tradedDays[msg.sender].add(calcDay()), "[swapExactTokensForAVAX] Unsuccessfull set operation");
         tokenContract.safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router
@@ -460,7 +460,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         // Add the current day if not exists on the traded days set
         if (
             !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
-        ) (tradedDays[msg.sender].add(calcDay()), "[swapTokensForExactAVAX] Unsuccessfull set operation");
+        ) require(tradedDays[msg.sender].add(calcDay()), "[swapTokensForExactAVAX] Unsuccessfull set operation");
         tokenContract.safeTransferFrom(
             msg.sender,
             address(this),

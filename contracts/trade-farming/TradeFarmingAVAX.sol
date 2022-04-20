@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../interfaces/IPangolinRouter.sol";
+import "../interfaces/IAVAXDEXRouter.sol";
 import "../interfaces/ITradeFarmingAVAX.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -10,12 +10,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @author Ulaş Erdoğan
 /// @title Trade Farming Contract for any ETH - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' native coin - token pair
-/// @dev Integradted version for Avalanche - Pangolin Pools
+/// @dev Integradted version for Avalanche DEX Pools
 contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
     /////////// Interfaces & Libraries ///////////
 
     // DEX router interface
-    IPangolinRouter routerContract;
+    IAVAXDEXRouter routerContract;
     // Token of pair interface
     IERC20 tokenContract;
     // Rewarding token interface
@@ -102,7 +102,7 @@ contract TradeFarmingAVAX is ITradeFarmingAVAX, Ownable {
         );
 
         deployTime = block.timestamp;
-        routerContract = IPangolinRouter(_routerAddress);
+        routerContract = IAVAXDEXRouter(_routerAddress);
         tokenContract = IERC20(_tokenAddress);
         rewardToken = IERC20(_rewardAddress);
         previousVolumes[0] = _previousVolume;

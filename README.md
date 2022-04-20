@@ -1,8 +1,8 @@
 # Pera Trade (Swap) Farming Protocol
 
-![PERA](https://pera.finance/img/icons/logo.png)
+![PERA](https://pera.finance/static/media/pera.1355a10261502bfb0871.png)
 
-### Written in [Solidity 0.8.11](https://docs.soliditylang.org/en/v0.8.11/) and uses [Hardhat](https://hardhat.org/)
+### Writed in [Solidity 0.8.2](https://docs.soliditylang.org/en/v0.8.2/) and uses [Hardhat](https://hardhat.org/)
 
 <br/>
 
@@ -10,6 +10,9 @@ Pera Trade Farming Protocol enables Uniswap V2 fork DEXes to reward their users 
 
 <br/>
 
+The version in ```hacken-audit``` branch is audited by Hacken, see [audit report](https://hacken.io/wp-content/uploads/2022/04/PeraFinance_SCAudit_Report2_05042022.pdf).
+
+<br/>
 
 Download the dependencies by
 <br/>
@@ -42,7 +45,7 @@ Create ```keys/privatekey.json```  file in your project directory with your priv
 ```
 contracts
 ├──── interfaces
-│   ├── IPangolinRouter.sol
+│   ├── IAVAXDEXRouter.sol
 │   ├── ITradeFarming.sol
 │   ├── ITradeFarming.sol
 │   ├── ITradeFarmingAVAX.sol

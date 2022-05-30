@@ -2,7 +2,7 @@
 
 ![PERA](https://pera.finance/static/media/pera.1355a10261502bfb0871.png)
 
-### Writed in [Solidity 0.8.2](https://docs.soliditylang.org/en/v0.8.2/) and uses [Hardhat](https://hardhat.org/)
+### Wrote in [Solidity 0.8.2](https://docs.soliditylang.org/en/v0.8.2/) and uses [Hardhat](https://hardhat.org/)
 
 <br/>
 

@@ -321,7 +321,66 @@ contract TradeFarming is ITradeFarmingTT, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override returns (uint256[] memory amounts) {}
+    ) external virtual override returns (uint256[] memory out) {
+        // Position of the volume token
+        uint256 r;
+        // Checking the pairs path
+        if (path[0] == address(tokenA)) {
+            require(
+                path[path.length - 1] == address(tokenB),
+                "[swapExactTokensForTokens] Invalid Path!"
+            );
+            r = 0;
+        } else if (path[0] == address(tokenB)) {
+            require(
+                path[path.length - 1] == address(tokenA),
+                "[swapExactTokensForTokens] Invalid Path!"
+            );
+            r = path.length - 1;
+        } else {
+            revert("[swapExactTokensForTokens] Invalid Path!");
+        }
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        )
+            require(
+                tradedDays[msg.sender].add(calcDay()),
+                "[swapExactTokensForTokens] Unsuccessful set operation"
+            );
+        IERC20(path[r]).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        // Approve the pair token to the router
+        IERC20(path[r]).safeIncreaseAllowance(
+            address(routerContract),
+            amountIn
+        );
+
+        if (r == 0) {
+            //Recording the volumes if the competition is not finished
+            if (lastAddedDay != totalDays) tradeRecorder(amountIn);
+            // Interacting with the router contract and returning the in-out values
+            return
+                routerContract.swapExactTokensForTokens(
+                    amountIn,
+                    amountOutMin,
+                    path,
+                    to,
+                    deadline
+                );
+        } else {
+            out = routerContract.swapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline
+            );
+            //Recording the volumes if the competition is not finished
+            if (lastAddedDay != totalDays) tradeRecorder(out[out.length - 1]);
+        }
+    }
 
     /**
      * @notice Swaps the some amount of token A/B for the other tokens specified amount by connecting to the DEX Router and records the trade volumes
@@ -334,7 +393,71 @@ contract TradeFarming is ITradeFarmingTT, Ownable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override returns (uint256[] memory amounts) {}
+    ) external virtual override returns (uint256[] memory out) {
+        // Position of the volume token
+        uint256 r;
+        // Checking the pairs path
+        if (path[0] == address(tokenA)) {
+            require(
+                path[path.length - 1] == address(tokenB),
+                "[swapTokensForExactTokens] Invalid Path!"
+            );
+            r = 0;
+        } else if (path[0] == address(tokenB)) {
+            require(
+                path[path.length - 1] == address(tokenA),
+                "[swapTokensForExactTokens] Invalid Path!"
+            );
+            r = path.length - 1;
+        } else {
+            revert("[swapTokensForExactTokens] Invalid Path!");
+        }
+
+        // Add the current day if not exists on the traded days set
+        if (
+            !tradedDays[msg.sender].contains(calcDay()) && calcDay() < totalDays
+        )
+            require(
+                tradedDays[msg.sender].add(calcDay()),
+                "[swapTokensForExactTokens] Unsuccessful set operation"
+            );
+        IERC20(path[0]).safeTransferFrom(
+            msg.sender,
+            address(this),
+            routerContract.getAmountsIn(amountOut, path)[0]
+        );
+
+        // Approve the pair token to the router
+        IERC20(path[0]).safeIncreaseAllowance(
+            address(routerContract),
+            amountInMax
+        );
+
+        if (r == 0) {
+            // Interacting with the router contract and returning the in-out values
+            out = routerContract.swapTokensForExactETH(
+                amountOut,
+                amountInMax,
+                path,
+                to,
+                deadline
+            );
+            //Recording the volumes if the competition is not finished
+            if (lastAddedDay != totalDays) tradeRecorder(out[0]);
+        } else {
+            if (lastAddedDay != totalDays) tradeRecorder(amountOut);
+        }
+
+        // Resetting the approval amount the pair token to the router
+        IERC20(path[0]).safeApprove(address(routerContract), 0);
+        routerContract.swapTokensForExactETH(
+            amountOut,
+            amountInMax,
+            path,
+            to,
+            deadline
+        );
+    }
 
     /////////// Get Public Data ///////////
 

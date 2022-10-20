@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @author Ulaş Erdoğan
-/// @title Trade Farming Contract for any ETH - Token Pool
+/// @title Trade Farming Contract for any Token - Token Pool
 /// @dev Can be integrated to any EVM - Uniswap V2 fork DEX' token - token pair
 contract TradeFarming is ITradeFarmingTT, Ownable {
     /////////// Interfaces & Libraries ///////////
@@ -349,10 +349,10 @@ contract TradeFarming is ITradeFarmingTT, Ownable {
                 tradedDays[msg.sender].add(calcDay()),
                 "[swapExactTokensForTokens] Unsuccessful set operation"
             );
-        IERC20(path[r]).safeTransferFrom(msg.sender, address(this), amountIn);
+        IERC20(path[0]).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve the pair token to the router
-        IERC20(path[r]).safeIncreaseAllowance(
+        IERC20(path[0]).safeIncreaseAllowance(
             address(routerContract),
             amountIn
         );
@@ -435,7 +435,7 @@ contract TradeFarming is ITradeFarmingTT, Ownable {
 
         if (r == 0) {
             // Interacting with the router contract and returning the in-out values
-            out = routerContract.swapTokensForExactETH(
+            out = routerContract.swapTokensForExactTokens(
                 amountOut,
                 amountInMax,
                 path,
@@ -445,18 +445,18 @@ contract TradeFarming is ITradeFarmingTT, Ownable {
             //Recording the volumes if the competition is not finished
             if (lastAddedDay != totalDays) tradeRecorder(out[0]);
         } else {
+            //Recording the volumes if the competition is not finished
             if (lastAddedDay != totalDays) tradeRecorder(amountOut);
+            routerContract.swapTokensForExactTokens(
+                amountOut,
+                amountInMax,
+                path,
+                to,
+                deadline
+            );
         }
-
         // Resetting the approval amount the pair token to the router
         IERC20(path[0]).safeApprove(address(routerContract), 0);
-        routerContract.swapTokensForExactETH(
-            amountOut,
-            amountInMax,
-            path,
-            to,
-            deadline
-        );
     }
 
     /////////// Get Public Data ///////////
